@@ -18,6 +18,7 @@ frontend renders findings dynamically from this payload.
 """
 from __future__ import annotations
 
+import base64
 import io
 import shutil
 import sys
@@ -225,7 +226,20 @@ async def scan_file(file: UploadFile = File(...)) -> dict[str, Any]:
     _STORE[scan_id] = {
         "report": report, "root": root, "label": file.filename, "created": time.time(),
     }
-    return scan_to_payload(scan_id, file.filename, report, can_download=True)
+    payload = scan_to_payload(scan_id, file.filename, report, can_download=True)
+
+    # Eagerly build the patched bundle and embed it as base64 in the
+    # response. This makes the "Download Fixed" button work on stateless
+    # deploys (Vercel) where /api/download/{scan_id} can hit a different
+    # cold instance with no _STORE entry.
+    try:
+        zip_bytes = _build_patched_zip(report, root)
+        payload["patched_zip_b64"] = base64.b64encode(zip_bytes).decode("ascii")
+        payload["patched_zip_name"] = "skill_fixed.zip"
+    except Exception:  # noqa: BLE001
+        payload["patched_zip_b64"] = None
+
+    return payload
 
 
 @app.post("/api/scan/url")
@@ -424,22 +438,13 @@ def _build_patch_sheet(report: ScanReport,
     return "\n".join(out)
 
 
-@app.get("/api/download/{scan_id}")
-def download(scan_id: str) -> Response:
-    """Build a zip where every flagged line has had a concrete safety fix
-    applied — secrets redacted in place, unsafe calls commented out — plus
-    an ESTES_PATCH.md change log explaining each transformation.
-    """
-    _gc()
-    ent = _STORE.get(scan_id)
-    if not ent:
-        raise HTTPException(404, "unknown or expired scan_id")
-    report: ScanReport = ent["report"]
-    root: Path | None = ent["root"]
-    if root is None or not root.exists():
-        raise HTTPException(409, "download not available for URL scans")
+def _build_patched_zip(report: ScanReport, root: Path) -> bytes:
+    """Materialize the in-place safety patch as a zip blob.
 
-    # Group findings by file → line → list[Finding]
+    Pure function → safe to call from both /api/scan/file (eager, embedded
+    base64 in the payload for stateless deploys like Vercel) and from
+    /api/download/{scan_id} (legacy stateful download).
+    """
     by_file: dict[str, dict[int, list[Finding]]] = {}
     for f in report.findings:
         if f.file and f.line:
@@ -456,7 +461,6 @@ def download(scan_id: str) -> Response:
     else:
         src_root = root
 
-    # Per-file change log captured during patching (used by ESTES_PATCH.md).
     change_log: dict[str, list[tuple[int, list[str]]]] = {}
 
     buf = io.BytesIO()
@@ -485,8 +489,27 @@ def download(scan_id: str) -> Response:
 
         zf.writestr("ESTES_PATCH.md", _build_patch_sheet(report, change_log))
 
+    return buf.getvalue()
+
+
+@app.get("/api/download/{scan_id}")
+def download(scan_id: str) -> Response:
+    """Legacy stateful download — works only when the scan store still
+    holds the materialized upload tree (i.e. same process, within TTL).
+    Stateless deploys (Vercel) should use the `patched_zip_b64` field
+    that /api/scan/file embeds directly in the response."""
+    _gc()
+    ent = _STORE.get(scan_id)
+    if not ent:
+        raise HTTPException(404, "unknown or expired scan_id")
+    report: ScanReport = ent["report"]
+    root: Path | None = ent["root"]
+    if root is None or not root.exists():
+        raise HTTPException(409, "download not available for URL scans")
+
+    payload = _build_patched_zip(report, root)
     return Response(
-        content=buf.getvalue(),
+        content=payload,
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="skill_fixed.zip"'},
     )

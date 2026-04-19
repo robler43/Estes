@@ -1580,13 +1580,24 @@ PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80">
         flash('Download is only available for uploaded files.');
         return;
       }
-      const url = `/api/download/${encodeURIComponent(CURRENT_SCAN.scan_id)}`;
+      let url;
+      let revoke = false;
+      if (CURRENT_SCAN.patched_zip_b64) {
+        const bin = atob(CURRENT_SCAN.patched_zip_b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        url = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }));
+        revoke = true;
+      } else {
+        url = `/api/download/${encodeURIComponent(CURRENT_SCAN.scan_id)}`;
+      }
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'skill_fixed.zip';
+      a.download = CURRENT_SCAN.patched_zip_name || 'skill_fixed.zip';
       document.body.appendChild(a);
       a.click();
       a.remove();
+      if (revoke) setTimeout(() => URL.revokeObjectURL(url), 5000);
       flash('Fixed bundle downloading…');
     });
 
