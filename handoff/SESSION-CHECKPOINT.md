@@ -5,7 +5,7 @@
 
 ## Where We Stopped
 
-Architect defined the SkillBouncer two-component architecture (Auditor + Runtime Wrapper, Antigravity/Claude target) and wrote the Step 0 brief. Next action: BUILDER scaffolds `requirements.txt`, `README.md`, `app.py`, `auditor.py`, and `wrapper.py` per `handoff/ARCHITECT-BRIEF.md`.
+Architect defined the Estes two-component architecture (Auditor + Runtime Wrapper, Antigravity/Claude target) and wrote the Step 0 brief. Next action: BUILDER scaffolds `requirements.txt`, `README.md`, `app.py`, `auditor.py`, and `wrapper.py` per `handoff/ARCHITECT-BRIEF.md`.
 
 ---
 
@@ -34,7 +34,7 @@ Copy and paste this to resume:
 
 ---
 
-You are Bob (Builder) on SkillBouncer.
+You are Bob (Builder) on Estes.
 Read `handoff/SESSION-CHECKPOINT.md`, then `handoff/ARCHITECT-BRIEF.md`.
 Confirm Step 0 is unambiguous, then add your Builder Plan section to `ARCHITECT-BRIEF.md` and wait for Architect approval before writing any code.
 

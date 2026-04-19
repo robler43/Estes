@@ -10,7 +10,7 @@ Ready for Builder: YES
 
 | Check | Result |
 |---|---|
-| All paths inside `/Users/robinhoesli/Desktop/projects/SkillBouncer` | PASS — 11 files, no escapes |
+| All paths inside `/Users/robinhoesli/Desktop/projects/Estes` | PASS — 11 files, no escapes |
 | Clean, logical folder structure | PASS — flat root + `handoff/` + `demo/weather_tool/` |
 | `requirements.txt` includes all 7 listed packages | PASS — streamlit, fastapi, uvicorn, pydantic, python-dotenv, requests, PyYAML (all pinned) |
 | `README.md` has project name, tagline, and "How to run" instructions | PASS — title, tagline, Install, Run (both components), Demo, Status |
@@ -25,9 +25,9 @@ Ready for Builder: YES
 
 ## Should Fix
 
-- `SkillBouncer/` (repo root) — no `.gitignore` exists and `.DS_Store` is already untracked. Recommendation: add a `.gitignore` containing at minimum `.DS_Store`, `__pycache__/`, `*.pyc`, `.venv/`, `.pytest_cache/`. Trivial; do inline.
+- `Estes/` (repo root) — no `.gitignore` exists and `.DS_Store` is already untracked. Recommendation: add a `.gitignore` containing at minimum `.DS_Store`, `__pycache__/`, `*.pyc`, `.venv/`, `.pytest_cache/`. Trivial; do inline.
 - `requirements.txt:3` — `uvicorn==0.30.6` is pinned without the `[standard]` extra. The `README.md:35` command `uvicorn wrapper:app --reload` will work but uvicorn emits a warning recommending `watchfiles`. Recommendation: change line 3 to `uvicorn[standard]==0.30.6` so the documented dev command runs clean. Inline fix.
-- `demo/weather_tool/SKILL.md:13-15` — the documentation quotes the three leaky lines verbatim, so the Auditor flags them too (3 extra findings). Not wrong (the bytes do contain the patterns) but it inflates the demo's score from 60 to 100. Two acceptable paths: (a) wrap the quoted lines so they don't match (e.g., insert a zero-width break inside `print` — fragile), or (b) accept it and add KG-7 to BUILD-LOG noting "scanner currently flags documentation that quotes leak code; needs an `# skillbouncer: ignore` opt-out comment in Phase 1." Recommend (b) — log to BUILD-LOG as KG-7, no code change.
+- `demo/weather_tool/SKILL.md:13-15` — the documentation quotes the three leaky lines verbatim, so the Auditor flags them too (3 extra findings). Not wrong (the bytes do contain the patterns) but it inflates the demo's score from 60 to 100. Two acceptable paths: (a) wrap the quoted lines so they don't match (e.g., insert a zero-width break inside `print` — fragile), or (b) accept it and add KG-7 to BUILD-LOG noting "scanner currently flags documentation that quotes leak code; needs an `# estes: ignore` opt-out comment in Phase 1." Recommend (b) — log to BUILD-LOG as KG-7, no code change.
 
 ## Escalate to Architect
 

@@ -1,4 +1,4 @@
-"""SkillBouncer Auditor — layered scanner for third-party agent skills.
+"""Estes Auditor — layered scanner for third-party agent skills.
 
 Implements `scan_skill(source, *, llm=True)` per handoff/auditor_design.md.
 
@@ -44,7 +44,7 @@ except Exception:
     # dotenv is optional at runtime — env vars work fine without it.
     pass
 
-log = logging.getLogger("skillbouncer.auditor")
+log = logging.getLogger("estes.auditor")
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ DEFAULT_MAX_BYTES = 5 * 1024 * 1024
 DEFAULT_PER_FILE_BYTES = 500 * 1024
 DEFAULT_TIMEOUT_S = 30.0
 
-IGNORE_DIRECTIVE_RE = re.compile(r"(?:#|//)\s*skillbouncer\s*:\s*ignore", re.IGNORECASE)
+IGNORE_DIRECTIVE_RE = re.compile(r"(?:#|//)\s*estes\s*:\s*ignore", re.IGNORECASE)
 
 # Hosts the AST pass treats as "phone-home suspicious" when paired with env-var access.
 NETWORK_ALLOWLIST = {
@@ -117,27 +117,27 @@ SECRET_PATTERNS: dict[str, re.Pattern[str]] = {
 _STATIC_RULE_META: dict[str, tuple[str, str, str, str]] = {
     # rule name -> (id, severity, category, suggested_fix)
     "Generic API key assignment": (
-        "SB-CRED-ASSIGN-01", "warning", "credential_leak",
+        "ES-CRED-ASSIGN-01", "warning", "credential_leak",
         "Move the literal into an environment variable or secret store.",
     ),
     "Bearer token": (
-        "SB-BEARER-01", "high", "credential_leak",
+        "ES-BEARER-01", "high", "credential_leak",
         "Never embed bearer tokens in source. Load them from env at call time.",
     ),
     "AWS access key id": (
-        "SB-AWS-KEY-01", "high", "credential_leak",
+        "ES-AWS-KEY-01", "high", "credential_leak",
         "Rotate the key immediately and load credentials from the AWS SDK chain.",
     ),
     "Private key block": (
-        "SB-PRIVKEY-01", "high", "credential_leak",
+        "ES-PRIVKEY-01", "high", "credential_leak",
         "Remove the embedded private key; use a key management system.",
     ),
     "Debug print of credential": (
-        "SB-PRINT-CRED-01", "high", "credential_leak",
+        "ES-PRINT-CRED-01", "high", "credential_leak",
         "Remove the print() or redact the credential before printing.",
     ),
     "Logging of credential": (
-        "SB-LOG-CRED-01", "high", "credential_leak",
+        "ES-LOG-CRED-01", "high", "credential_leak",
         "Strip the credential from the log call or lower the log level to nothing.",
     ),
 }
@@ -166,7 +166,7 @@ class Finding:
 
     # Phase 0 compatibility: callers that imported the previous module accessed
     # `f.rule` (the human rule name). The Phase 1 stable handle is `f.id` (e.g.
-    # SB-PRINT-ENV-01); expose it under the old name so wrapper.py and any
+    # ES-PRINT-ENV-01); expose it under the old name so wrapper.py and any
     # external integrators keep working without a code change. See
     # handoff/reviewer_feedback.md MF-1.
     @property
@@ -267,7 +267,7 @@ def scan_text(text: str, filename: str = "<input>") -> list[Finding]:
 
 def _finding_from_static_rule(rule: str, filename: str, lineno: int, line: str) -> Finding:
     rule_id, severity, category, fix = _STATIC_RULE_META.get(
-        rule, ("SB-STATIC-UNKNOWN", "warning", "credential_leak", "")
+        rule, ("ES-STATIC-UNKNOWN", "warning", "credential_leak", "")
     )
     snippet = line.strip()
     if len(snippet) > 200:
@@ -286,7 +286,7 @@ def _finding_from_static_rule(rule: str, filename: str, lineno: int, line: str) 
 
 
 def _scan_static(file_path: Path, rel_path: str) -> list[Finding]:
-    """Run Pass A on a single file. Honors `# skillbouncer: ignore` per line."""
+    """Run Pass A on a single file. Honors `# estes: ignore` per line."""
     findings: list[Finding] = []
     try:
         text = file_path.read_text(encoding="utf-8", errors="ignore")
@@ -307,7 +307,7 @@ def _scan_static(file_path: Path, rel_path: str) -> list[Finding]:
                 snippet = line.strip()[:200]
                 findings.append(
                     Finding(
-                        id="SB-ENTROPY-01",
+                        id="ES-ENTROPY-01",
                         severity="warning",
                         category="possible_secret",
                         file=rel_path,
@@ -359,7 +359,7 @@ class _LeakVisitor(ast.NodeVisitor):
         self.findings: list[Finding] = []
         # Local-name symbol table: names known to currently hold env-var values.
         self.env_names: set[str] = set()
-        # Function we are currently inside (for SB-NET-PHONEHOME-01 reachability).
+        # Function we are currently inside (for ES-NET-PHONEHOME-01 reachability).
         self._function_touches_env: list[bool] = [False]
 
     # ---- bookkeeping ----------------------------------------------------
@@ -451,17 +451,17 @@ class _LeakVisitor(ast.NodeVisitor):
         func_name = _flatten_attr(node.func)
         snippet = self._snippet(node)
 
-        # SB-PRINT-ENV-01
+        # ES-PRINT-ENV-01
         if func_name == "print" and self._call_touches_env(node):
             self._add(
-                node, "SB-PRINT-ENV-01", "high", "credential_leak",
+                node, "ES-PRINT-ENV-01", "high", "credential_leak",
                 "print() exposes environment variable contents to stdout, which "
                 "agent frameworks inject into the LLM context.",
                 snippet,
                 "Remove the print or redact the env value before printing.",
             )
 
-        # SB-LOG-ENV-01
+        # ES-LOG-ENV-01
         elif func_name and "." in func_name:
             head, _, method = func_name.rpartition(".")
             log_methods = {"debug", "info", "warning", "error", "critical", "exception"}
@@ -469,24 +469,24 @@ class _LeakVisitor(ast.NodeVisitor):
             head_root = head.split(".")[0]
             if head_root in log_namespaces and method in log_methods and self._call_touches_env(node):
                 self._add(
-                    node, "SB-LOG-ENV-01", "high", "credential_leak",
+                    node, "ES-LOG-ENV-01", "high", "credential_leak",
                     f"{func_name}() logs environment variable contents.",
                     snippet,
                     "Strip the env value from the log call.",
                 )
 
-        # SB-EXEC-01
+        # ES-EXEC-01
         if func_name in {"eval", "exec", "__import__"} and node.args:
             first = node.args[0]
             if not (isinstance(first, ast.Constant) and isinstance(first.value, str)):
                 self._add(
-                    node, "SB-EXEC-01", "high", "dangerous_call",
+                    node, "ES-EXEC-01", "high", "dangerous_call",
                     f"{func_name}() called with a non-literal argument.",
                     snippet,
                     "Replace dynamic code execution with an explicit dispatch table.",
                 )
 
-        # SB-SUBPROC-SHELL-01
+        # ES-SUBPROC-SHELL-01
         if func_name and func_name.startswith("subprocess."):
             for kw in node.keywords:
                 if (
@@ -495,34 +495,34 @@ class _LeakVisitor(ast.NodeVisitor):
                     and kw.value.value is True
                 ):
                     self._add(
-                        node, "SB-SUBPROC-SHELL-01", "warning", "dangerous_call",
+                        node, "ES-SUBPROC-SHELL-01", "warning", "dangerous_call",
                         f"{func_name}(..., shell=True) enables shell injection.",
                         snippet,
                         "Pass an argv list and drop shell=True.",
                     )
 
-        # SB-OS-SYSTEM-01
+        # ES-OS-SYSTEM-01
         if func_name == "os.system":
             self._add(
-                node, "SB-OS-SYSTEM-01", "warning", "dangerous_call",
+                node, "ES-OS-SYSTEM-01", "warning", "dangerous_call",
                 "os.system() invokes a shell with the given string.",
                 snippet,
                 "Use subprocess.run([...]) without shell=True instead.",
             )
 
-        # SB-FILE-SECRET-READ-01
+        # ES-FILE-SECRET-READ-01
         if func_name == "open" and node.args:
             first = node.args[0]
             if isinstance(first, ast.Constant) and isinstance(first.value, str):
                 if _matches_secret_path(first.value):
                     self._add(
-                        node, "SB-FILE-SECRET-READ-01", "high", "credential_leak",
+                        node, "ES-FILE-SECRET-READ-01", "high", "credential_leak",
                         f"open() reads a known credential path: {first.value!r}.",
                         snippet,
                         "Remove this read or move credentials into a vault.",
                     )
 
-        # SB-NET-PHONEHOME-01: literal HTTP call inside a function that also
+        # ES-NET-PHONEHOME-01: literal HTTP call inside a function that also
         # touches env vars. We record candidate calls and their function-touch
         # state at flush time via _post_visit_check (handled in scan).
         if func_name in {"requests.get", "requests.post", "urllib.request.urlopen"}:
@@ -531,7 +531,7 @@ class _LeakVisitor(ast.NodeVisitor):
                 host = (urlparse(url).hostname or "").lower()
                 if host and host not in NETWORK_ALLOWLIST and self._current_function_touches_env():
                     self._add(
-                        node, "SB-NET-PHONEHOME-01", "warning", "exfiltration_risk",
+                        node, "ES-NET-PHONEHOME-01", "warning", "exfiltration_risk",
                         f"Outbound HTTP to {host} from a function that touches env vars.",
                         snippet,
                         "Remove the network call or document and allowlist the destination.",
@@ -586,7 +586,7 @@ def _scan_ast(file_path: Path, rel_path: str) -> list[Finding]:
     except SyntaxError as exc:
         return [
             Finding(
-                id="SB-PARSE-ERR-01",
+                id="ES-PARSE-ERR-01",
                 severity="info",
                 category="parse_error",
                 file=rel_path,
@@ -618,7 +618,7 @@ LLM_SYSTEM_PROMPT = (
     "Respond with a single JSON object and nothing else. Schema:\n"
     "{\n"
     '  "findings": [\n'
-    '    {"id": "SB-SEM-...", "severity": "high|warning|info", '
+    '    {"id": "ES-SEM-...", "severity": "high|warning|info", '
     '"category": "semantic_mismatch", "file": "<relative path or empty>", '
     '"line": 0, "message": "<one sentence>", "snippet": "<<=200 chars>", '
     '"suggested_fix": "<one sentence>"}\n'
@@ -760,7 +760,7 @@ def _coerce_llm_findings(blob: dict[str, Any]) -> tuple[list[Finding], str]:
                 sev = "warning"
             out.append(
                 Finding(
-                    id=str(item.get("id", "SB-SEM-LLM-01"))[:64],
+                    id=str(item.get("id", "ES-SEM-LLM-01"))[:64],
                     severity=sev,  # type: ignore[arg-type]
                     category=str(item.get("category", "semantic_mismatch"))[:64],
                     file=str(item.get("file", ""))[:200],
@@ -781,21 +781,21 @@ def _llm_semantic_check(
     timeout_s: float,
 ) -> tuple[list[Finding], str, list[str], bool]:
     """Returns (findings, summary, warnings, llm_used)."""
-    provider = os.environ.get("SKILLBOUNCER_LLM_PROVIDER", "anthropic").strip().lower()
+    provider = os.environ.get("ESTES_LLM_PROVIDER", "anthropic").strip().lower()
     if provider == "off":
-        return [], "", ["LLM check disabled (SKILLBOUNCER_LLM_PROVIDER=off)."], False
+        return [], "", ["LLM check disabled (ESTES_LLM_PROVIDER=off)."], False
 
     if provider == "anthropic":
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             return [], "", ["LLM check skipped: ANTHROPIC_API_KEY not set."], False
-        model = os.environ.get("SKILLBOUNCER_LLM_MODEL", "claude-haiku-4-5")
+        model = os.environ.get("ESTES_LLM_MODEL", "claude-haiku-4-5")
         caller = lambda u: _call_anthropic(model, api_key, LLM_SYSTEM_PROMPT, u, timeout_s)
     elif provider == "xai":
         api_key = os.environ.get("XAI_API_KEY")
         if not api_key:
             return [], "", ["LLM check skipped: XAI_API_KEY not set."], False
-        model = os.environ.get("SKILLBOUNCER_LLM_MODEL", "grok-4-mini")
+        model = os.environ.get("ESTES_LLM_MODEL", "grok-4-mini")
         caller = lambda u: _call_xai(model, api_key, LLM_SYSTEM_PROMPT, u, timeout_s)
     else:
         return [], "", [f"LLM check skipped: unknown provider {provider!r}."], False
@@ -1131,7 +1131,7 @@ def _discover_files(
         if size > DEFAULT_PER_FILE_BYTES:
             oversize.append(
                 Finding(
-                    id="SB-FILE-OVERSIZE-01",
+                    id="ES-FILE-OVERSIZE-01",
                     severity="info",
                     category="scan_skipped",
                     file=rel,
@@ -1221,7 +1221,7 @@ def scan_skill(
     warnings_out: list[str] = []
     log.debug("scan_skill start: source=%s llm=%s", src_str, llm)
 
-    with tempfile.TemporaryDirectory(prefix="skillbouncer_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="estes_") as tmp:
         workspace = Path(tmp)
         skill_root, resolve_warnings = _resolve_source(
             source, workspace, timeout_s=timeout_s, max_bytes=max_bytes
@@ -1255,7 +1255,7 @@ def scan_skill(
         if not manifest.description:
             findings.append(
                 Finding(
-                    id="SB-MANIFEST-MISSING-01",
+                    id="ES-MANIFEST-MISSING-01",
                     severity="warning",
                     category="manifest",
                     file="",
@@ -1306,7 +1306,7 @@ def scan_path(root: str | Path) -> ScanReport:
     return scan_skill(root, llm=False)
 
 
-def redact_text(text: str, marker: str = "[REDACTED by SkillBouncer]") -> tuple[str, int]:
+def redact_text(text: str, marker: str = "[REDACTED by Estes]") -> tuple[str, int]:
     """Apply every Pass A regex to text. Returns (redacted_text, count)."""
     count = 0
     for pattern in SECRET_PATTERNS.values():

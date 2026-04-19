@@ -15,9 +15,9 @@ Ready for Builder: NO
 | Three passes (static, AST, LLM) all wired through `scan_skill` | PASS |
 | Risk score formula `min(100, 40·high + 12·warning + 3·info)` | PASS — line 1105-1107 |
 | Severity bands `Safe` / `Warning` / `High Risk` | PASS — line 1110-1117 |
-| `# skillbouncer: ignore` directive (closes KG-7) | PASS — line 270 |
+| `# estes: ignore` directive (closes KG-7) | PASS — line 270 |
 | `_safe_extract` defenses (closes KG-6) | PASS — traversal, absolute, symlink, oversize, runtime-stream all blocked |
-| Static + AST end-to-end against `demo/weather_tool` returns 3 high AST findings | PASS — verified live (`SB-PRINT-ENV-01` ×2 + `SB-LOG-ENV-01`) |
+| Static + AST end-to-end against `demo/weather_tool` returns 3 high AST findings | PASS — verified live (`ES-PRINT-ENV-01` ×2 + `ES-LOG-ENV-01`) |
 | LLM pass is fail-soft and degrades to a warning when no key configured | PASS — line 757, 762, 768, 781-784 |
 | `report.to_json()` round-trips through `json.loads` | PASS |
 | .zip handling | PASS — local zip and GitHub zip both go through `_safe_extract` |
@@ -83,7 +83,7 @@ for chunk in resp.iter_content(chunk_size=64 * 1024):
 - [`handoff/auditor.py`](handoff/auditor.py) line 764 — model id `claude-haiku-4-5` came from the design doc, not a verified Anthropic catalog entry. Confirm with Project Owner that this is the current Anthropic alias for the Haiku tier; otherwise default to a known-good id (`claude-3-5-haiku-20241022` or whatever the April 2026 catalog publishes) so the LLM pass works out of the box.
 - Design DoD item 10 (`pytest -q` green) is unmet. Builder ran the equivalent five cases as ad-hoc smoke tests, so the *coverage* exists but it is not reproducible. Add `tests/test_auditor.py` with the five fixtures called out in the design (zip-bomb, traversal, demo weather, clean, missing-manifest) — closes KG-4 and locks the design's promise. Recommend logging as Step 1.5 if Project Owner does not want to block deploy.
 - [`handoff/auditor.py`](handoff/auditor.py) line 808-830 — GitHub URL parser does not handle branches that contain `/` (e.g. `release/v1`). Design doc explicitly accepted this trade-off, so log as a known gap (KG-9) rather than fix in Step 1.
-- [`handoff/auditor.py`](handoff/auditor.py) line 47 — `log = logging.getLogger("skillbouncer.auditor")` is allocated but never written to. Either remove or wire up `log.debug(...)` at the pass boundaries.
+- [`handoff/auditor.py`](handoff/auditor.py) line 47 — `log = logging.getLogger("estes.auditor")` is allocated but never written to. Either remove or wire up `log.debug(...)` at the pass boundaries.
 
 ---
 

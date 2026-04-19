@@ -1,4 +1,4 @@
-/* SkillBouncer dashboard — handoff/ui_design.md §2 + §4 + §6.2.
+/* Estes dashboard — handoff/ui_design.md §2 + §4 + §6.2.
    No build step. No CSS-in-JS. Color tokens come from ui/theme.py via the
    :root variables block injected at startup. */
 
@@ -22,7 +22,7 @@
 
 /* ---------- Header -------------------------------------------------------- */
 
-.sb-header {
+.es-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -30,24 +30,24 @@
   margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
-.sb-header__brand { display: flex; align-items: center; gap: 14px; }
-.sb-header__logo {
+.es-header__brand { display: flex; align-items: center; gap: 14px; }
+.es-header__logo {
   width: 40px; height: 40px; color: var(--accent);
   filter: drop-shadow(0 0 6px rgba(34, 255, 136, 0.25));
 }
-.sb-header__wordmark { display: flex; flex-direction: column; line-height: 1.1; }
-.sb-header__name {
+.es-header__wordmark { display: flex; flex-direction: column; line-height: 1.1; }
+.es-header__name {
   font-weight: 600; font-size: 18px; color: var(--text-0); letter-spacing: -0.2px;
 }
-.sb-header__tagline {
+.es-header__tagline {
   font-size: 12px; color: var(--text-1); margin-top: 2px;
 }
-.sb-header__nav { display: flex; gap: 18px; }
-.sb-header__nav a {
+.es-header__nav { display: flex; gap: 18px; }
+.es-header__nav a {
   font-size: 13px; color: var(--text-1); text-decoration: none;
   padding: 6px 8px; border-radius: 6px; transition: color 120ms;
 }
-.sb-header__nav a:hover { color: var(--accent); }
+.es-header__nav a:hover { color: var(--accent); }
 
 /* ---------- Upload area --------------------------------------------------- */
 
@@ -72,12 +72,12 @@
 }
 [data-testid="stFileUploaderDropzone"] svg { color: var(--accent) !important; }
 
-.sb-upload-or {
+.es-upload-or {
   display: flex; align-items: center; gap: 12px;
   margin: 14px 0 6px 0;
   color: var(--text-2); font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
 }
-.sb-upload-or::before, .sb-upload-or::after {
+.es-upload-or::before, .es-upload-or::after {
   content: ""; flex: 1; height: 1px; background: var(--border);
 }
 
@@ -117,14 +117,14 @@ div.stButton > button:disabled {
   cursor: not-allowed;
 }
 
-/* Primary CTA — wrap with sb-primary class via st.markdown then st.button. */
-.sb-primary div.stButton > button {
+/* Primary CTA — wrap with es-primary class via st.markdown then st.button. */
+.es-primary div.stButton > button {
   background: var(--accent);
   color: var(--bg-0);
   border: none;
   font-weight: 600;
 }
-.sb-primary div.stButton > button:hover:not(:disabled) {
+.es-primary div.stButton > button:hover:not(:disabled) {
   background: var(--accent-bright);
   color: var(--bg-0);
 }
@@ -145,7 +145,7 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
 
 /* ---------- Cards (generic panel) ---------------------------------------- */
 
-.sb-card {
+.es-card {
   background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -155,39 +155,39 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
 
 /* ---------- Score + badge ------------------------------------------------- */
 
-.sb-score {
+.es-score {
   display: flex; flex-direction: column; align-items: flex-start;
   background: var(--bg-1); border: 1px solid var(--border); border-radius: 12px;
   padding: 18px 24px; min-width: 180px;
 }
-.sb-score__num {
+.es-score__num {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 600; font-size: 64px; line-height: 1; letter-spacing: -2px;
 }
-.sb-score__denom {
+.es-score__denom {
   font-size: 13px; color: var(--text-1); margin-top: 6px;
 }
 
-.sb-badge {
+.es-badge {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 16px; border-radius: 999px; font-weight: 600; font-size: 13px;
   letter-spacing: 0.6px;
   border: 1px solid;
 }
-.sb-badge__dot {
+.es-badge__dot {
   width: 8px; height: 8px; border-radius: 50%;
 }
 
-.sb-meta {
+.es-meta {
   display: flex; flex-wrap: wrap; gap: 6px 14px;
   align-items: center;
   font-size: 13px; color: var(--text-1);
 }
-.sb-meta__sep { color: var(--text-2); }
+.es-meta__sep { color: var(--text-2); }
 
 /* ---------- Suggested-fix banner ----------------------------------------- */
 
-.sb-fix-banner {
+.es-fix-banner {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-left-width: 4px;
@@ -197,7 +197,7 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   color: var(--text-0);
   display: flex; gap: 10px; align-items: center;
 }
-.sb-fix-banner__label {
+.es-fix-banner__label {
   text-transform: uppercase; letter-spacing: 0.6px;
   font-size: 11px; color: var(--text-2); font-weight: 600;
   flex-shrink: 0;
@@ -205,32 +205,32 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
 
 /* ---------- Findings list ------------------------------------------------- */
 
-.sb-section-title {
+.es-section-title {
   display: flex; justify-content: space-between; align-items: baseline;
   margin: 24px 0 10px 0;
 }
-.sb-section-title h3 {
+.es-section-title h3 {
   font-size: 18px; font-weight: 600; color: var(--text-0); margin: 0;
 }
-.sb-section-title__count { color: var(--text-1); font-size: 14px; }
+.es-section-title__count { color: var(--text-1); font-size: 14px; }
 
-.sb-finding-row {
+.es-finding-row {
   display: flex; align-items: center; gap: 12px;
   font-family: 'Inter', sans-serif;
 }
-.sb-finding-row__sev {
+.es-finding-row__sev {
   font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
   width: 64px; flex-shrink: 0;
 }
-.sb-finding-row__id {
+.es-finding-row__id {
   font-family: 'JetBrains Mono', monospace; font-size: 13px;
   color: var(--text-0); flex-shrink: 0;
 }
-.sb-finding-row__loc {
+.es-finding-row__loc {
   color: var(--text-1); font-size: 13px; font-family: 'JetBrains Mono', monospace;
   flex: 1;
 }
-.sb-finding-row__src {
+.es-finding-row__src {
   font-size: 11px; padding: 2px 8px; border-radius: 4px;
   background: rgba(95, 181, 255, 0.1);
   font-family: 'JetBrains Mono', monospace;
@@ -252,7 +252,7 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   border-radius: 10px;
 }
 
-.sb-snippet {
+.es-snippet {
   background: var(--bg-0);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -264,7 +264,7 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   margin: 8px 0;
 }
 
-.sb-fix-callout {
+.es-fix-callout {
   background: rgba(34, 255, 136, 0.08);
   border: 1px solid rgba(34, 255, 136, 0.2);
   border-radius: 6px;
@@ -273,13 +273,13 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   color: var(--text-0);
   margin-top: 8px;
 }
-.sb-fix-callout__label {
+.es-fix-callout__label {
   color: var(--accent); font-weight: 600; margin-right: 6px;
 }
 
 /* ---------- Empty-state cards -------------------------------------------- */
 
-.sb-feature-card {
+.es-feature-card {
   background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -287,13 +287,13 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   height: 100%;
   display: flex; flex-direction: column; gap: 8px;
 }
-.sb-feature-card__icon { color: var(--accent); font-size: 22px; }
-.sb-feature-card__title { font-weight: 600; font-size: 14px; color: var(--text-0); }
-.sb-feature-card__body { font-size: 13px; color: var(--text-1); line-height: 1.5; }
+.es-feature-card__icon { color: var(--accent); font-size: 22px; }
+.es-feature-card__title { font-weight: 600; font-size: 14px; color: var(--text-0); }
+.es-feature-card__body { font-size: 13px; color: var(--text-1); line-height: 1.5; }
 
 /* ---------- Warnings strip ----------------------------------------------- */
 
-.sb-warnings {
+.es-warnings {
   background: rgba(255, 180, 84, 0.08);
   border: 1px solid rgba(255, 180, 84, 0.25);
   border-radius: 8px;
@@ -302,7 +302,7 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   font-size: 13px;
   color: var(--text-0);
 }
-.sb-warnings ul { margin: 6px 0 0 18px; padding: 0; color: var(--text-1); }
+.es-warnings ul { margin: 6px 0 0 18px; padding: 0; color: var(--text-1); }
 
 /* ---------- Misc Streamlit polish ---------------------------------------- */
 

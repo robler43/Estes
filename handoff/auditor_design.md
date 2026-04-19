@@ -12,7 +12,7 @@ Replace the Phase 0 regex-only `auditor.py` with a layered scanner that:
 3. Runs three passes — static regex, Python AST, and an LLM semantic check — against the same shared ruleset.
 4. Returns a single structured `ScanReport` (also serializable to JSON) consumed by both the Streamlit UI (`app.py`) and the FastAPI wrapper (`wrapper.py`).
 
-This step closes Phase 0 known gaps **KG-1** (entropy), **KG-2** (AST), **KG-5** (severity-weighted score), and **KG-6** (zip-bomb / path-traversal hardening). KG-7 (`# skillbouncer: ignore` opt-out comment) is also addressed by the line-level ignore directive defined below.
+This step closes Phase 0 known gaps **KG-1** (entropy), **KG-2** (AST), **KG-5** (severity-weighted score), and **KG-6** (zip-bomb / path-traversal hardening). KG-7 (`# estes: ignore` opt-out comment) is also addressed by the line-level ignore directive defined below.
 
 ---
 
@@ -76,7 +76,7 @@ FindingSource = Literal["static", "ast", "llm"]
 
 @dataclass(slots=True)
 class Finding:
-    id: str                     # rule id, e.g. "SB-PRINT-ENV-01"
+    id: str                     # rule id, e.g. "ES-PRINT-ENV-01"
     severity: Severity
     category: str               # e.g. "credential_leak", "semantic_mismatch"
     file: str                   # path relative to skill root
@@ -183,7 +183,7 @@ Inside `skill_root`:
 
 - **Manifest**: first match of `SKILL.md`, `SKILL.yaml`, `SKILL.yml`, `SKILL.json`, `manifest.yaml`, `manifest.json`. Parsed loosely — markdown frontmatter or first H1 paragraph for description; YAML/JSON `name`, `description`, `capabilities` keys when present.
 - **Code files**: extension-based, the existing `SCANNABLE_SUFFIXES` set extended with `.mjs`, `.cjs`, `.tsx`, `.jsx`. Hard-skip: anything under `node_modules/`, `.git/`, `dist/`, `build/`, `__pycache__/`, `.venv/`, `venv/`.
-- **Per-file size cap**: 500 KB. Files larger than that contribute a single `info` finding (`SB-FILE-OVERSIZE-01`) and are not scanned further.
+- **Per-file size cap**: 500 KB. Files larger than that contribute a single `info` finding (`ES-FILE-OVERSIZE-01`) and are not scanned further.
 
 ---
 
@@ -193,9 +193,9 @@ Each pass returns `list[Finding]`. Results are concatenated and de-duplicated by
 
 ### Pass A — Static (regex + entropy)
 
-- Reuses the existing `SECRET_PATTERNS` ruleset; each regex maps to a stable `Finding.id` (e.g. `SB-PRINT-CRED-01`, `SB-AWS-KEY-01`, `SB-PRIVKEY-01`).
-- Adds Shannon-entropy check on quoted string literals ≥ 20 chars: entropy ≥ 4.5 bits/char emits `SB-ENTROPY-01` at `severity="warning"`.
-- Honors a line-level opt-out: any line containing `# skillbouncer: ignore` (or `// skillbouncer: ignore` for JS/TS) is skipped. (Closes KG-7.)
+- Reuses the existing `SECRET_PATTERNS` ruleset; each regex maps to a stable `Finding.id` (e.g. `ES-PRINT-CRED-01`, `ES-AWS-KEY-01`, `ES-PRIVKEY-01`).
+- Adds Shannon-entropy check on quoted string literals ≥ 20 chars: entropy ≥ 4.5 bits/char emits `ES-ENTROPY-01` at `severity="warning"`.
+- Honors a line-level opt-out: any line containing `# estes: ignore` (or `// estes: ignore` for JS/TS) is skipped. (Closes KG-7.)
 
 ### Pass B — Python AST (closes KG-2)
 
@@ -203,13 +203,13 @@ For every `*.py` file, parse with `ast.parse(..., type_comments=True)`. Visitor 
 
 | Rule id | Trigger | Severity |
 |---|---|---|
-| `SB-PRINT-ENV-01` | `print(...)` whose args reference `os.environ`, `os.getenv`, or any `Name` whose definition came from those | `high` |
-| `SB-LOG-ENV-01` | `logger.{debug,info,warning,error}(...)` with the same env-var argument shape | `high` |
-| `SB-EXEC-01` | call to `eval`, `exec`, or `__import__` with a non-literal argument | `high` |
-| `SB-SUBPROC-SHELL-01` | `subprocess.{run,call,Popen,...}` with `shell=True` | `warning` |
-| `SB-OS-SYSTEM-01` | `os.system(...)` | `warning` |
-| `SB-FILE-SECRET-READ-01` | `open(...)` whose path matches `~/.aws/credentials`, `~/.ssh/id_*`, `*.pem`, `*.key`, `.env` | `high` |
-| `SB-NET-PHONEHOME-01` | `requests.{get,post}` / `urllib.request.urlopen` whose URL is a literal pointing at a non-allowlisted host **and** the call is reached from a function that also touches `os.environ` | `warning` |
+| `ES-PRINT-ENV-01` | `print(...)` whose args reference `os.environ`, `os.getenv`, or any `Name` whose definition came from those | `high` |
+| `ES-LOG-ENV-01` | `logger.{debug,info,warning,error}(...)` with the same env-var argument shape | `high` |
+| `ES-EXEC-01` | call to `eval`, `exec`, or `__import__` with a non-literal argument | `high` |
+| `ES-SUBPROC-SHELL-01` | `subprocess.{run,call,Popen,...}` with `shell=True` | `warning` |
+| `ES-OS-SYSTEM-01` | `os.system(...)` | `warning` |
+| `ES-FILE-SECRET-READ-01` | `open(...)` whose path matches `~/.aws/credentials`, `~/.ssh/id_*`, `*.pem`, `*.key`, `.env` | `high` |
+| `ES-NET-PHONEHOME-01` | `requests.{get,post}` / `urllib.request.urlopen` whose URL is a literal pointing at a non-allowlisted host **and** the call is reached from a function that also touches `os.environ` | `warning` |
 
 The AST visitor maintains a small symbol table tracking which local names are bound to env-var reads, so `key = os.getenv("X"); print(key)` is caught.
 
@@ -217,16 +217,16 @@ The AST visitor maintains a small symbol table tracking which local names are bo
 
 Compares declared `manifest.description` against the actual code surface to surface mismatches no rule can spot:
 
-- Skill says "fetch weather" but code reads `~/.ssh/id_rsa` → `SB-SEM-MISMATCH-01` (`high`)
-- Skill says "local-only" but code makes outbound HTTP → `SB-SEM-NETWORK-01` (`high`)
-- Skill description is empty / missing → `SB-MANIFEST-MISSING-01` (`warning`)
+- Skill says "fetch weather" but code reads `~/.ssh/id_rsa` → `ES-SEM-MISMATCH-01` (`high`)
+- Skill says "local-only" but code makes outbound HTTP → `ES-SEM-NETWORK-01` (`high`)
+- Skill description is empty / missing → `ES-MANIFEST-MISSING-01` (`warning`)
 
 Provider config via env vars (loaded with `python-dotenv` at module import):
 
 | Env var | Purpose |
 |---|---|
-| `SKILLBOUNCER_LLM_PROVIDER` | `anthropic` (default), `xai`, or `off` |
-| `SKILLBOUNCER_LLM_MODEL` | overrides default model id |
+| `ESTES_LLM_PROVIDER` | `anthropic` (default), `xai`, or `off` |
+| `ESTES_LLM_MODEL` | overrides default model id |
 | `ANTHROPIC_API_KEY` | required when provider is `anthropic` |
 | `XAI_API_KEY` | required when provider is `xai` |
 | `GITHUB_TOKEN` | optional; used for higher GitHub API rate limits |
@@ -288,7 +288,7 @@ resp = requests.post(
 {
   "findings": [
     {
-      "id": "SB-SEM-...",
+      "id": "ES-SEM-...",
       "severity": "high|warning|info",
       "category": "semantic_mismatch|...",
       "file": "<relative path or empty>",
@@ -382,9 +382,9 @@ If Builder feels the AST visitor warrants `libcst` or the LLM call warrants the 
 - [ ] `_safe_extract` rejects path traversal, absolute paths, symlinks, and over-budget archives. Unit-tested with at least one zip-bomb fixture and one `../etc/passwd` fixture.
 - [ ] All Phase 0 regex rules still fire; existing `wrapper.py` `/redact` endpoint still passes its smoke test.
 - [ ] AST pass detects all three leak vectors in `demo/weather_tool/weather.py` as `high` severity.
-- [ ] LLM pass is fully optional. With `SKILLBOUNCER_LLM_PROVIDER=off` (or no API key), `scan_skill` runs static + AST only and `report.llm_used == False`.
+- [ ] LLM pass is fully optional. With `ESTES_LLM_PROVIDER=off` (or no API key), `scan_skill` runs static + AST only and `report.llm_used == False`.
 - [ ] `report.to_json()` is valid JSON and round-trips through `json.loads` cleanly.
-- [ ] `# skillbouncer: ignore` (and `// skillbouncer: ignore`) suppresses static findings on that line. Closes KG-7.
+- [ ] `# estes: ignore` (and `// estes: ignore`) suppresses static findings on that line. Closes KG-7.
 - [ ] Risk score formula and severity bands match this spec exactly.
 - [ ] No real API key, token, or other secret committed anywhere — including in test fixtures.
 - [ ] `pytest -q` green for at least: zip-bomb rejection, path-traversal rejection, demo weather skill (3 high, severity = `High Risk`), clean skill (0 findings, severity = `Safe`), missing-manifest (1 warning).
@@ -397,7 +397,7 @@ If Builder feels the AST visitor warrants `libcst` or the LLM call warrants the 
 - Private-repo GitHub URLs (would need OAuth flow beyond `GITHUB_TOKEN`).
 - `.tar.gz` / `.tgz` archives.
 - Caching of LLM responses or downloaded archives.
-- The `skillbouncer` CLI — Step 2 spike.
+- The `estes` CLI — Step 2 spike.
 - Antigravity tool-runner hook — Step 2 spike (KG-3).
 
 ---

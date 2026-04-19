@@ -1,4 +1,4 @@
-# SkillBouncer Dashboard — UI Design (Step 2)
+# Estes Dashboard — UI Design (Step 2)
 *Owned by Architect. Implemented by Builder.*
 
 Date: 2026-04-18
@@ -81,7 +81,7 @@ Panels have a 1px `--border` hairline plus a soft inner glow (`box-shadow: inset
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│  [◇ logo]  SkillBouncer                                          [docs] [gh] │  ← header (sticky)
+│  [◇ logo]  Estes                                          [docs] [gh] │  ← header (sticky)
 │            Keep secrets out of your agent chats                              │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
@@ -109,17 +109,17 @@ Panels have a 1px `--border` hairline plus a soft inner glow (`box-shadow: inset
 │  │                                                                        │ │
 │  ├────────── Findings (9) ───────────────────── [filter: all▾] [src▾]──┤ │
 │  │                                                                        │ │
-│  │   ▾ ● HIGH    SB-PRINT-ENV-01    weather.py:14         [ast]         │ │  ← expandable card
+│  │   ▾ ● HIGH    ES-PRINT-ENV-01    weather.py:14         [ast]         │ │  ← expandable card
 │  │     print() exposes environment variable contents.                    │ │
 │  │     ┌──────────────────────────────────────────────────────────────┐│ │
 │  │     │ print(f"[DEBUG] Calling weather API with api_key={API_KEY}") ││ │
 │  │     └──────────────────────────────────────────────────────────────┘│ │
 │  │     Suggested fix: Remove the print or redact the env value.         │ │
 │  │                                                                        │ │
-│  │   ▸ ● HIGH    SB-LOG-ENV-01      weather.py:16         [ast]         │ │
-│  │   ▸ ● WARN    SB-NET-PHONEHOME   weather.py:21         [ast]         │ │
-│  │   ▸ ● WARN    SB-CRED-ASSIGN-01  weather.py:8          [static]      │ │
-│  │   ▸ ● INFO    SB-FILE-OVERSIZE   data.bin              [static]      │ │
+│  │   ▸ ● HIGH    ES-LOG-ENV-01      weather.py:16         [ast]         │ │
+│  │   ▸ ● WARN    ES-NET-PHONEHOME   weather.py:21         [ast]         │ │
+│  │   ▸ ● WARN    ES-CRED-ASSIGN-01  weather.py:8          [static]      │ │
+│  │   ▸ ● INFO    ES-FILE-OVERSIZE   data.bin              [static]      │ │
 │  │                                                                        │ │
 │  └────────────────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -145,7 +145,7 @@ Panels have a 1px `--border` hairline plus a soft inner glow (`box-shadow: inset
 ### 4.1 Header
 
 - Sticky to top of viewport. 64px tall.
-- Left: logo (40×40, neon green outline) + wordmark (`SkillBouncer`, 18px / 600) + tagline below (`Keep secrets out of your agent chats`, 12px / `--text-1`).
+- Left: logo (40×40, neon green outline) + wordmark (`Estes`, 18px / 600) + tagline below (`Keep secrets out of your agent chats`, 12px / `--text-1`).
 - Right: two ghost buttons (`Docs`, `GitHub`) — text-only, 13px, hover tint = `--accent` at 80% alpha. These open `README.md` and the repo URL.
 - Background: `--bg-0` with a 1px bottom border = `--border`.
 
@@ -171,8 +171,8 @@ Three buttons, left-aligned, equal width (160px each):
 | Button | State machine | Behavior |
 |---|---|---|
 | **Scan Skill** | enabled iff source provided AND not currently scanning | Calls `auditor.scan_skill(source, llm=True)`. Spinner overlays the panel during scan. On error → toast (`st.error`). |
-| **Apply Wrapper** | enabled iff `report` exists AND `report.severity != "Safe"` | Opens a modal-equivalent (Streamlit has no native modal in 1.39 — use an `st.expander` styled as a side-sheet, or a `st.dialog` if Builder confirms 1.39 ships it). Modal contents: a one-liner `pip install skillbouncer && skillbouncer start` plus a copy-to-clipboard button. **No actual install is performed** — KG-3 still open. Tooltip on hover when disabled: "Wrapper is only useful when findings exist." |
-| **Download Fixed Skill** | enabled iff `report` exists AND `report.severity != "Safe"` AND source was a `.zip` or directory (not a single file) | Generates an in-memory zip that is the original tree with `# skillbouncer: ignore` comments inserted at every flagged line, then `st.download_button` triggers the download. **This is a stub-grade auto-patch**, not the full roadmap auto-fix. Builder must add a banner inside the modal: "Stub patch — review before redistributing." |
+| **Apply Wrapper** | enabled iff `report` exists AND `report.severity != "Safe"` | Opens a modal-equivalent (Streamlit has no native modal in 1.39 — use an `st.expander` styled as a side-sheet, or a `st.dialog` if Builder confirms 1.39 ships it). Modal contents: a one-liner `pip install estes && estes start` plus a copy-to-clipboard button. **No actual install is performed** — KG-3 still open. Tooltip on hover when disabled: "Wrapper is only useful when findings exist." |
+| **Download Fixed Skill** | enabled iff `report` exists AND `report.severity != "Safe"` AND source was a `.zip` or directory (not a single file) | Generates an in-memory zip that is the original tree with `# estes: ignore` comments inserted at every flagged line, then `st.download_button` triggers the download. **This is a stub-grade auto-patch**, not the full roadmap auto-fix. Builder must add a banner inside the modal: "Stub patch — review before redistributing." |
 
 Visual:
 - Primary (`Scan Skill`): solid `--accent` background, `--bg-0` text, no border, 8px radius. Hover: 10% lighter. Focus: 2px `--accent` outline at 50% alpha.
@@ -219,19 +219,19 @@ Section header: `Findings (N)` with two right-aligned filter dropdowns:
 Each finding renders as an `st.expander` whose label is HTML:
 
 ```
-[●] HIGH    SB-PRINT-ENV-01    weather.py:14    [ast]
+[●] HIGH    ES-PRINT-ENV-01    weather.py:14    [ast]
 ```
 
 Where:
 - `[●]` is an 8px dot in severity color
 - `HIGH` / `WARNING` / `INFO` is a 12px uppercase tag
-- `SB-PRINT-ENV-01` is the rule id, JetBrains Mono 13px, `--text-0`
+- `ES-PRINT-ENV-01` is the rule id, JetBrains Mono 13px, `--text-0`
 - `weather.py:14` is `--text-1` 13px, click would seek to file (Phase 3 — for now non-interactive)
 - `[ast]` is a tiny capsule tag in `--info` color
 
 Expanded body:
 - Top: `f.message` (full text, 14px `--text-0`)
-- Middle: code snippet inside a `st.code(snippet, language="python")` block, but wrapped in a `<div class="sb-snippet">` with our own background (`--bg-0`) so it pops against the card surface.
+- Middle: code snippet inside a `st.code(snippet, language="python")` block, but wrapped in a `<div class="es-snippet">` with our own background (`--bg-0`) so it pops against the card surface.
 - Bottom: a horizontal callout bar, `--accent`-tinted at 8% alpha:
   ```
   ✓ Suggested fix:  Remove the print or redact the env value before printing.
@@ -309,7 +309,7 @@ Persist `report` in `st.session_state` so re-runs (Streamlit's auto-rerender on 
 New / changed files for Step 2:
 
 ```
-SkillBouncer/
+Estes/
 ├── app.py                           # rewritten end-to-end
 ├── .streamlit/
 │   └── config.toml                  # NEW — locks dark base theme + accent
@@ -341,7 +341,7 @@ This handles the bulk of the dark mode work; the injected stylesheet only overri
 
 ### 6.2 `assets/styles.css`
 
-A single ~150-line stylesheet, scoped via class names we add ourselves (`sb-card`, `sb-badge`, `sb-snippet`, etc.) plus a small set of `[data-testid="..."]` overrides for built-in widgets. Loaded once at app startup:
+A single ~150-line stylesheet, scoped via class names we add ourselves (`es-card`, `es-badge`, `es-snippet`, etc.) plus a small set of `[data-testid="..."]` overrides for built-in widgets. Loaded once at app startup:
 
 ```python
 st.markdown(f"<style>{(Path('assets')/'styles.css').read_text()}</style>",
@@ -395,7 +395,7 @@ Step 2 is complete when:
 7. Findings render as expandable cards per §4.6, with severity dot, rule id, file:line, source tag, code snippet, and suggested-fix callout.
 8. Severity and source filters narrow the visible findings list without re-scanning.
 9. `Scan Skill` is the only action enabled at the empty-state. `Apply Wrapper` and `Download Fixed Skill` enable only after a non-Safe report exists.
-10. `Download Fixed Skill` produces a real `.zip` whose flagged lines have `# skillbouncer: ignore` appended (or the equivalent comment for non-Python files).
+10. `Download Fixed Skill` produces a real `.zip` whose flagged lines have `# estes: ignore` appended (or the equivalent comment for non-Python files).
 11. WCAG AA contrast holds for the 8 color/background pairings tabulated in §2.1, verified with a contrast checker.
 12. No console errors in Chrome DevTools after a full happy-path run.
 13. `app.py` imports nothing from `streamlit.components` and uses no third-party Streamlit add-ons. No new entries in `requirements.txt`.
@@ -435,8 +435,8 @@ Open questions for Project Owner (do not block Builder; ship the design's defaul
 
 For the Builder, after MF-1 and MF-2 from Step 1 are cleared:
 
-> You are Bob (Builder) on SkillBouncer. Read `handoff/ui_design.md` from the Architect. Implement Step 2 exactly as designed. Do not introduce new dependencies. Scope guard: items in §8 "Out of scope" must NOT ship. Output `app.py` (rewritten), `.streamlit/config.toml`, `assets/styles.css`, `assets/logo.svg`, `ui/components.py`, `ui/theme.py`. Update `handoff/BUILD-LOG.md` and `handoff/REVIEW-REQUEST.md`.
+> You are Bob (Builder) on Estes. Read `handoff/ui_design.md` from the Architect. Implement Step 2 exactly as designed. Do not introduce new dependencies. Scope guard: items in §8 "Out of scope" must NOT ship. Output `app.py` (rewritten), `.streamlit/config.toml`, `assets/styles.css`, `assets/logo.svg`, `ui/components.py`, `ui/theme.py`. Update `handoff/BUILD-LOG.md` and `handoff/REVIEW-REQUEST.md`.
 
 For the Reviewer:
 
-> You are Richard (Reviewer) on SkillBouncer. Read `handoff/REVIEW-REQUEST.md` then audit Step 2 against the §8 Definition of Done in `handoff/ui_design.md`. Verify color contrast, spec adherence, and the prerequisite from §1. Write findings to `handoff/reviewer_feedback.md`.
+> You are Richard (Reviewer) on Estes. Read `handoff/REVIEW-REQUEST.md` then audit Step 2 against the §8 Definition of Done in `handoff/ui_design.md`. Verify color contrast, spec adherence, and the prerequisite from §1. Write findings to `handoff/reviewer_feedback.md`.

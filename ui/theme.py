@@ -1,4 +1,4 @@
-"""Color and severity tokens for the SkillBouncer dashboard.
+"""Color and severity tokens for the Estes dashboard.
 
 This module is the single source of truth for the dashboard's visual system
 (per `handoff/ui_design.md` §2.1 and §9). The same hex values appear in

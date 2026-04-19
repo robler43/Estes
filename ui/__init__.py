@@ -1,1 +1,1 @@
-"""SkillBouncer UI helpers (pure-render, no business logic)."""
+"""Estes UI helpers (pure-render, no business logic)."""

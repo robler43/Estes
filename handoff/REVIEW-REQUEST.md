@@ -46,7 +46,7 @@ What needs runtime validation on the Reviewer's dev box (with `streamlit` instal
 
 - `streamlit run app.py` boots without console errors.
 - Drag-and-drop a `.zip` from Finder into the dropzone produces a scan and renders the Results panel.
-- Pasting `https://github.com/RobinHo-coder/SkillBouncer` into the URL field and clicking Scan Skill produces a scan.
+- Pasting `https://github.com/RobinHo-coder/Estes` into the URL field and clicking Scan Skill produces a scan.
 - The empty state ("What we look for" triptych) renders before any scan and disappears after.
 - Severity + source filters narrow the visible findings list without re-scanning.
 - `Apply Wrapper` opens the install-instructions expander; `Download Fixed` produces a real zip.
@@ -57,7 +57,7 @@ What needs runtime validation on the Reviewer's dev box (with `streamlit` instal
 1. **Architect Q2 ("Danger" vs "High Risk")** — kept "HIGH RISK" matching `auditor.OverallSeverity`. UI-only rename to "DANGER" is a one-line change in `ui/theme.py SEVERITY_STYLE`. Project Owner / Architect: confirm which?
 2. **Header `Docs` link** — no docs site exists yet, so the link is `#`. Acceptable?
 3. **`Apply Wrapper` UX** — currently shows install instructions in an inline expander since KG-3 is open and we can't actually install. Is "honest documentation" acceptable, or does the demo for judges need this to *look* like a one-click install (lie quietly)?
-4. **`Download Fixed` patch quality** — current implementation is Reviewer-flagged "stub" by design (appends `# skillbouncer: ignore` markers, doesn't fix the underlying leak). Generates a `SKILLBOUNCER_PATCH.md` manifest alongside. Acceptable for Phase 1?
+4. **`Download Fixed` patch quality** — current implementation is Reviewer-flagged "stub" by design (appends `# estes: ignore` markers, doesn't fix the underlying leak). Generates a `ESTES_PATCH.md` manifest alongside. Acceptable for Phase 1?
 5. **Streamlit 1.39 expander HTML labels** — code uses plain-text labels with leading severity glyphs. If 1.39 actually supports HTML in expander labels reliably, we can upgrade to colored severity dots in the label. Worth verifying on the dev box.
 
 ## Known Gaps Status
@@ -73,7 +73,7 @@ What needs runtime validation on the Reviewer's dev box (with `streamlit` instal
 - [ ] Drag-and-drop a `.zip` (use `demo/weather_tool` zipped) → produces severity badge, score, suggested-fix banner, expandable findings.
 - [ ] Filters (severity, source) narrow findings without re-scanning.
 - [ ] `Scan Skill` is the only enabled action with no source provided; secondary actions enable only after a non-Safe report.
-- [ ] `Download Fixed` zip extracts and contains `SKILLBOUNCER_PATCH.md` plus the original tree with markers appended at the right line numbers.
+- [ ] `Download Fixed` zip extracts and contains `ESTES_PATCH.md` plus the original tree with markers appended at the right line numbers.
 - [ ] `Apply Wrapper` expander shows the install one-liner.
 - [ ] No regressions in `wrapper.py` (`POST /scan`, `POST /redact`) — Phase 0 attribute access via `f.rule` still works.
 - [ ] CSS palette discipline (no hard-coded hex) holds.

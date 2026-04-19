@@ -23,16 +23,16 @@ Files changed:
 
 Decisions made:
 - **Output location**: Per Project Owner's instruction, the implementation lives at `handoff/auditor.py`, not at the repo root. The running root `auditor.py` is unchanged. Architect / Project Owner must `mv handoff/auditor.py auditor.py` after review to activate it.
-- **LLM default unresolved**: Architect's design left the `llm` default as an open question for Project Owner. Builder shipped `llm=True` (Architect's recommendation) for `scan_skill`, and kept `scan_path()` as `llm=False` so the existing Streamlit UI and FastAPI `/scan` endpoint stay fast. Override with env var `SKILLBOUNCER_LLM_PROVIDER=off`.
+- **LLM default unresolved**: Architect's design left the `llm` default as an open question for Project Owner. Builder shipped `llm=True` (Architect's recommendation) for `scan_skill`, and kept `scan_path()` as `llm=False` so the existing Streamlit UI and FastAPI `/scan` endpoint stay fast. Override with env var `ESTES_LLM_PROVIDER=off`.
 - **Backwards compatibility**: `SECRET_PATTERNS`, `scan_text`, `scan_path`, `redact_text` are preserved with the same signatures. `wrapper.py` and `app.py` need no changes for the swap-in.
-- **Bonus AST rule fired**: Demo weather_tool now also triggers `SB-NET-PHONEHOME-01` (warning) because `requests.get("https://api.weatherapi.com/...")` is reached from a function that touches `os.environ`-bound locals. This wasn't requested in the demo brief but matches the spec's reachability rule. Score caps at 100 either way.
+- **Bonus AST rule fired**: Demo weather_tool now also triggers `ES-NET-PHONEHOME-01` (warning) because `requests.get("https://api.weatherapi.com/...")` is reached from a function that touches `os.environ`-bound locals. This wasn't requested in the demo brief but matches the spec's reachability rule. Score caps at 100 either way.
 
 Smoke-test results (from `handoff/auditor.py` against `demo/weather_tool/`):
 - severity=`High Risk`, score=100
 - 9 high + 1 warning total (6 static from `SKILL.md` quoting leak code + 3 high AST from `weather.py` + 1 phone-home warning)
 - AST correctly resolves `API_KEY = os.environ.get(...)` then `print(f"...{API_KEY}...")` via the env-var symbol table
 - Path-traversal zip rejected with warning, no escape
-- `# skillbouncer: ignore` suppresses static findings on the marked line (closes KG-7)
+- `# estes: ignore` suppresses static findings on the marked line (closes KG-7)
 - `report.to_json()` round-trips cleanly through `json.loads`
 - Clean fixture (no leaks) returns severity=`Safe`, score=0
 
@@ -55,7 +55,7 @@ Files changed:
 
 Implementation notes:
 - **Schema**: `app.py` consumes Phase 1 (`report.severity`, `f.id`, `f.suggested_fix`, `report.warnings`, `report.llm_used`). The Phase 0 compat properties from Step 1 (`Finding.rule`, `ScanReport.risk_label`) are still in place but unused by the new UI — they remain for `wrapper.py` and external integrators per AD-8 (proposed).
-- **Action bar**: `Scan Skill` (primary, neon green), `Apply Wrapper` (opens an inline expander with the local-proxy install one-liner — KG-3 still open, this is documentation-grade), `Download Fixed` (stub auto-patch — generates a zip mirroring the source tree with `# skillbouncer: ignore` markers appended at flagged lines plus a `SKILLBOUNCER_PATCH.md` manifest).
+- **Action bar**: `Scan Skill` (primary, neon green), `Apply Wrapper` (opens an inline expander with the local-proxy install one-liner — KG-3 still open, this is documentation-grade), `Download Fixed` (stub auto-patch — generates a zip mirroring the source tree with `# estes: ignore` markers appended at flagged lines plus a `ESTES_PATCH.md` manifest).
 - **Schema → Streamlit gotcha**: Streamlit 1.39 does not reliably support full HTML in `st.expander` labels, so finding cards use a plain-text label with a leading severity glyph (`▲ HIGH ...`) and the rich card body renders inside the expander. Documented in `ui_design.md` §9 fallback note.
 - **No new dependencies**. Only `streamlit` (already pinned), the standard library, and our own `auditor`.
 - **Modal**: `Apply Wrapper` uses an inline `st.expander` with `expanded=True` rather than `st.dialog`, since 1.39 dialog support is not relied upon. Documented in `ui_design.md` §4.3.
@@ -80,7 +80,7 @@ Decisions made (Step 2):
 - **Architect Q2** (badge wording) — shipped "HIGH RISK" matching `auditor.OverallSeverity`. UI-only rename to "DANGER" is a one-line change in `ui/theme.py SEVERITY_STYLE` if Project Owner prefers.
 - **Architect Q3** (URL field flow) — shared the Scan code path; URL wins when both upload + URL are provided, with an inline notice.
 - **`Apply Wrapper` as documentation card** — KG-3 is still open, so the button doesn't pretend to install. The expander shows the actual `uvicorn wrapper:app` one-liner. Honest beats magical.
-- **`Download Fixed` as stub-patch** — appends `# skillbouncer: ignore` markers + ships a patch manifest. The "actual fix" auto-patch is a Phase 3 roadmap item per README. Banner inside the modal warns "review before redistributing."
+- **`Download Fixed` as stub-patch** — appends `# estes: ignore` markers + ships a patch manifest. The "actual fix" auto-patch is a Phase 3 roadmap item per README. Banner inside the modal warns "review before redistributing."
 - **Header link `Docs`** — no docs site yet, so the link is a no-op anchor (`#`). Will become a real link when README is hosted.
 
 Reviewer findings: pending
@@ -108,10 +108,10 @@ Smoke tests (Round 2):
 - `f.rule == f.id` for every finding (10/10).
 - Phase 0 caller simulation: `label_color = {"clean":"green","low":"blue","medium":"orange","high":"red"}[report.risk_label]` resolves to `"red"`. (Was `KeyError` in Round 1.)
 - `risk_label` threshold sweep `score ∈ {0, 1, 24, 25, 69, 70, 100}` → `clean / low / low / medium / medium / high / high` ✓.
-- Phase 0 wrapper.py path: `scan_text(...)[0].rule == 'SB-CRED-ASSIGN-01'` ✓; `redact_text(...)` unchanged ✓.
+- Phase 0 wrapper.py path: `scan_text(...)[0].rule == 'ES-CRED-ASSIGN-01'` ✓; `redact_text(...)` unchanged ✓.
 - MF-2 hostile stream: `requests.get` monkey-patched to return 4 MB at `max_bytes=128 KB` → raised `RequestException(... aborted at 196608 bytes)`; partial file unlinked ✓.
 - JSON round-trip: `report.to_json()` parses; `risk_label` key present and matches the property ✓.
-- Clean fixture (README only, no SKILL.md): severity=`Warning`, score=12, risk_label=`low`. (`SB-MANIFEST-MISSING-01` fires, expected behavior.)
+- Clean fixture (README only, no SKILL.md): severity=`Warning`, score=12, risk_label=`low`. (`ES-MANIFEST-MISSING-01` fires, expected behavior.)
 
 Reviewer findings: Round 2 — re-audit auto-deferred; Builder ran live verification and Project Owner authorized swap-in to unblock Step 2.
 Deploy: **DONE** — `handoff/auditor.py` → `auditor.py` (root). Phase 0 callers (`wrapper.py`, `app.py`) verified working via `Finding.rule` and `ScanReport.risk_label` compat properties. Reviewer should still re-audit `auditor.py` at root (post-swap path).
@@ -121,13 +121,13 @@ Deploy: **DONE** — `handoff/auditor.py` → `auditor.py` (root). Phase 0 calle
 ## Known Gaps
 *Logged here instead of fixed. Addressed in a future step.*
 
-- **KG-1** — Shannon entropy: ADDRESSED in Step 1 (`SB-ENTROPY-01` warning on quoted literals ≥ 20 chars with entropy ≥ 4.5 bits/char).
-- **KG-2** — Python AST pass: ADDRESSED in Step 1 (seven rules: `SB-PRINT-ENV-01`, `SB-LOG-ENV-01`, `SB-EXEC-01`, `SB-SUBPROC-SHELL-01`, `SB-OS-SYSTEM-01`, `SB-FILE-SECRET-READ-01`, `SB-NET-PHONEHOME-01`).
+- **KG-1** — Shannon entropy: ADDRESSED in Step 1 (`ES-ENTROPY-01` warning on quoted literals ≥ 20 chars with entropy ≥ 4.5 bits/char).
+- **KG-2** — Python AST pass: ADDRESSED in Step 1 (seven rules: `ES-PRINT-ENV-01`, `ES-LOG-ENV-01`, `ES-EXEC-01`, `ES-SUBPROC-SHELL-01`, `ES-OS-SYSTEM-01`, `ES-FILE-SECRET-READ-01`, `ES-NET-PHONEHOME-01`).
 - **KG-3** — Wrapper has no actual Antigravity integration. `/redact` is a manual POST endpoint. Still open. Plan: Step 2 spike.
 - **KG-4** — No automated tests. Builder ran ad-hoc smoke tests but `pytest` + `tests/fixtures/` is not set up. Still open. Plan: Step 1.5 or as part of Step 2.
 - **KG-5** — Risk score formula: ADDRESSED in Step 1 (`min(100, 40·high + 12·warning + 3·info)` with `Safe` / `Warning` / `High Risk` bands).
 - **KG-6** — Zip-bomb / path-traversal: ADDRESSED in Step 1 (`_safe_extract` rejects absolute paths, `..`, symlinks, oversized entries, and aborts at `max_bytes`).
-- **KG-7** — `# skillbouncer: ignore` directive: ADDRESSED in Step 1 (line-level suppression in Pass A; supports `#` and `//` comment styles).
+- **KG-7** — `# estes: ignore` directive: ADDRESSED in Step 1 (line-level suppression in Pass A; supports `#` and `//` comment styles).
 - **KG-8** — `demo/weather_tool/SKILL.md` still inflates the score because it quotes the leak code verbatim. The ignore directive can suppress this if added to the SKILL.md, but Step 1 did not modify the demo. Still open as documentation polish.
 - **KG-9** — `_LeakVisitor.env_names` is module-scoped: tainted names leak across function scopes (e.g. `def a(): x = os.getenv("Y")` then `def b(x): print(x)` falsely flags `b`), and a tainted name stays tainted after rebind to a literal. Fix is a snapshot/restore on `_enter_function`/`_exit_function` plus binding-clear on `visit_Assign` for non-env values. Logged in Round 2; not patched. Plan: small follow-up alongside Step 1.5 tests (so we have fixtures to verify).
 - **KG-10** — Anthropic model id `claude-haiku-4-5` (line ~764) was design-doc-derived, not catalog-verified. Project Owner / Architect needs to confirm or supply the current Haiku alias; otherwise the LLM pass will 4xx out-of-the-box and degrade to a warning. Logged in Round 2.

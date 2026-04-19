@@ -1,6 +1,6 @@
 # weather_tool (demo skill)
 
-A deliberately leaky example skill used to exercise SkillBouncer.
+A deliberately leaky example skill used to exercise Estes.
 
 ## What it does
 
@@ -22,7 +22,7 @@ Any agent framework that captures stdout/stderr and feeds it back to the LLM (An
 python weather.py
 ```
 
-## Try it with SkillBouncer
+## Try it with Estes
 
 - **Auditor**: zip this folder, upload it through `streamlit run app.py`. Expect a non-zero risk score and three `Debug print of credential` / `Logging of credential` findings.
 - **Wrapper**: `POST /redact` with the captured `[DEBUG]` lines as `output` to confirm the same patterns are stripped.

@@ -6,11 +6,11 @@
 
 ## Project Context
 
-**SkillBouncer** — *The AI-powered bouncer for third-party AI agent skills.*
+**Estes** — *The AI-powered bouncer for third-party AI agent skills.*
 
 Third-party agent skills leak secrets (API keys, tokens, passwords) via debug prints. The agent framework captures stdout and injects it into the LLM context (especially in Antigravity with Claude). Once leaked, secrets can be retrieved by anyone continuing or sharing the chat.
 
-SkillBouncer ships two cooperating subsystems backed by a single shared detection ruleset:
+Estes ships two cooperating subsystems backed by a single shared detection ruleset:
 
 - **Auditor** — pre-flight, static. Streamlit UI accepts a skill upload, runs regex + entropy + AST checks, returns a risk score (0–100) and itemized findings.
 - **Runtime Wrapper** — in-flight, dynamic. FastAPI local proxy that intercepts skill stdout/stderr and redacts secrets before they reach the LLM context. Primary integration target: Antigravity (Claude).
@@ -53,7 +53,7 @@ SkillBouncer ships two cooperating subsystems backed by a single shared detectio
 - `python-multipart==0.0.12`
 
 **`README.md`** — must contain, in order:
-1. `# SkillBouncer` heading
+1. `# Estes` heading
 2. Tagline: *The AI-powered bouncer for third-party AI agent skills.*
 3. `## The Problem` — 2–3 sentence summary of the secret-leak problem.
 4. `## Architecture` — bullet list naming Auditor and Runtime Wrapper with one-line descriptions and the Antigravity/Claude target.
@@ -64,16 +64,16 @@ SkillBouncer ships two cooperating subsystems backed by a single shared detectio
 **`app.py`** — unified launcher placeholder. When run with `python app.py`, prints a help message listing the two subcommands and how to invoke each (`streamlit run auditor.py`, `uvicorn wrapper:app --reload`). No `argparse` required; a `print()` block inside `if __name__ == "__main__":` is sufficient. Must be importable without side effects.
 
 **`auditor.py`** — Streamlit placeholder. At module top level (Streamlit's execution model):
-- `st.set_page_config(page_title="SkillBouncer Auditor")`
-- `st.title("SkillBouncer Auditor")`
+- `st.set_page_config(page_title="Estes Auditor")`
+- `st.title("Estes Auditor")`
 - `st.caption("The AI-powered bouncer for third-party AI agent skills.")`
 - `st.file_uploader("Upload a skill (.zip)", type=["zip"], disabled=True)`
 - `st.info("Phase 0 placeholder — scanner not yet implemented.")`
 
 **`wrapper.py`** — FastAPI placeholder:
-- `app = FastAPI(title="SkillBouncer Runtime Wrapper")`
+- `app = FastAPI(title="Estes Runtime Wrapper")`
 - `GET /health` -> `{"status": "ok"}`
-- `GET /` -> `{"name": "SkillBouncer Runtime Wrapper", "phase": 0}`
+- `GET /` -> `{"name": "Estes Runtime Wrapper", "phase": 0}`
 
 ### Definition of Done
 - [ ] `requirements.txt` exists with the five pinned dependencies listed above, exact versions, no extras.

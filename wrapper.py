@@ -1,4 +1,4 @@
-"""SkillBouncer Runtime Wrapper.
+"""Estes Runtime Wrapper.
 
 A FastAPI service that accepts skill output and returns a redacted version
 before it reaches the LLM context. Phase 0 exposes a single /redact endpoint
@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from auditor import redact_text, scan_text
 
-app = FastAPI(title="SkillBouncer Runtime Wrapper", version="0.1.0")
+app = FastAPI(title="Estes Runtime Wrapper", version="0.1.0")
 
 
 class RedactRequest(BaseModel):
@@ -43,7 +43,7 @@ class ScanResponse(BaseModel):
 
 @app.get("/")
 def root() -> dict[str, object]:
-    return {"name": "SkillBouncer Runtime Wrapper", "phase": 0}
+    return {"name": "Estes Runtime Wrapper", "phase": 0}
 
 
 @app.get("/health")

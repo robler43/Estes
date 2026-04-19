@@ -1,4 +1,4 @@
-"""Pure-render helpers for the SkillBouncer dashboard.
+"""Pure-render helpers for the Estes dashboard.
 
 Every helper that interpolates dynamic strings into HTML routes them through
 `html.escape()` — finding messages, snippets, and file paths can originate
@@ -20,14 +20,14 @@ from ui import theme
 LOGO_SVG = """\
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none"
      stroke="currentColor" stroke-width="2" stroke-linecap="round"
-     stroke-linejoin="round" class="sb-header__logo">
+     stroke-linejoin="round" class="es-header__logo">
   <path d="M20 4 L33 8 V19 C33 26.5 27.5 32.5 20 35 C12.5 32.5 7 26.5 7 19 V8 Z" />
   <path d="M14 18 H26" />
   <path d="M14 23 H22" />
   <path d="M28 27 L31 32 L25 30 Z" fill="currentColor" stroke="none" opacity="0.85" />
 </svg>"""
 
-REPO_URL = "https://github.com/RobinHo-coder/SkillBouncer"
+REPO_URL = "https://github.com/RobinHo-coder/Estes"
 
 
 # ---------------------------------------------------------------------------
@@ -53,15 +53,15 @@ def inject_styles() -> None:
 def render_header() -> None:
     st.markdown(
         f"""
-<div class="sb-header">
-  <div class="sb-header__brand">
+<div class="es-header">
+  <div class="es-header__brand">
     {LOGO_SVG}
-    <div class="sb-header__wordmark">
-      <div class="sb-header__name">SkillBouncer</div>
-      <div class="sb-header__tagline">Keep secrets out of your agent chats</div>
+    <div class="es-header__wordmark">
+      <div class="es-header__name">Estes</div>
+      <div class="es-header__tagline">Keep secrets out of your agent chats</div>
     </div>
   </div>
-  <nav class="sb-header__nav">
+  <nav class="es-header__nav">
     <a href="#" target="_self">Docs</a>
     <a href="{html.escape(REPO_URL)}" target="_blank" rel="noopener">GitHub</a>
   </nav>
@@ -78,7 +78,7 @@ def render_header() -> None:
 
 def render_empty_state() -> None:
     """The 'what we look for' triptych shown before any scan runs."""
-    st.markdown('<div class="sb-section-title"><h3>What we look for</h3></div>',
+    st.markdown('<div class="es-section-title"><h3>What we look for</h3></div>',
                 unsafe_allow_html=True)
     cards = [
         ("env-var leaks",
@@ -96,10 +96,10 @@ def render_empty_state() -> None:
         with col:
             st.markdown(
                 f"""
-<div class="sb-feature-card">
-  <div class="sb-feature-card__icon">◆</div>
-  <div class="sb-feature-card__title">{html.escape(title)}</div>
-  <div class="sb-feature-card__body">{body}</div>
+<div class="es-feature-card">
+  <div class="es-feature-card__icon">◆</div>
+  <div class="es-feature-card__title">{html.escape(title)}</div>
+  <div class="es-feature-card__body">{body}</div>
 </div>
 """,
                 unsafe_allow_html=True,
@@ -116,9 +116,9 @@ def _badge_html(severity: str) -> str:
     color = style["color"]
     label = style["label"]
     return (
-        f'<span class="sb-badge" '
+        f'<span class="es-badge" '
         f'style="color:{color};background:{color}1f;border-color:{color}55">'
-        f'<span class="sb-badge__dot" style="background:{color}"></span>'
+        f'<span class="es-badge__dot" style="background:{color}"></span>'
         f'{html.escape(label)}'
         f"</span>"
     )
@@ -146,9 +146,9 @@ def render_score_panel(report: ScanReport) -> None:
     with col_score:
         st.markdown(
             f"""
-<div class="sb-score">
-  <div class="sb-score__num" style="color:{score_color}">{report.risk_score}</div>
-  <div class="sb-score__denom">/ 100 risk score</div>
+<div class="es-score">
+  <div class="es-score__num" style="color:{score_color}">{report.risk_score}</div>
+  <div class="es-score__denom">/ 100 risk score</div>
 </div>
 """,
             unsafe_allow_html=True,
@@ -162,13 +162,13 @@ def render_score_panel(report: ScanReport) -> None:
         st.markdown(
             f"""
 <div style="display:flex;align-items:center;height:100%">
-  <div class="sb-meta">
+  <div class="es-meta">
     <span>{len(report.findings)} {findings_word}</span>
-    <span class="sb-meta__sep">·</span>
+    <span class="es-meta__sep">·</span>
     <span>{report.files_scanned} {files_word} scanned</span>
-    <span class="sb-meta__sep">·</span>
+    <span class="es-meta__sep">·</span>
     <span>{duration:.1f} s</span>
-    <span class="sb-meta__sep">·</span>
+    <span class="es-meta__sep">·</span>
     <span style="color:{llm_color}">{html.escape(llm_meta)}</span>
   </div>
 </div>
@@ -184,8 +184,8 @@ def render_fix_banner(report: ScanReport) -> None:
     text = report.suggested_fix or "No suggested fix."
     st.markdown(
         f"""
-<div class="sb-fix-banner" style="border-left-color:{color}">
-  <span class="sb-fix-banner__label">Recommended</span>
+<div class="es-fix-banner" style="border-left-color:{color}">
+  <span class="es-fix-banner__label">Recommended</span>
   <span>{html.escape(text)}</span>
 </div>
 """,
@@ -199,7 +199,7 @@ def render_warnings(report: ScanReport) -> None:
     items = "".join(f"<li>{html.escape(w)}</li>" for w in report.warnings)
     with st.expander(f"{len(report.warnings)} scan warning(s)", expanded=False):
         st.markdown(
-            f'<div class="sb-warnings"><ul>{items}</ul></div>',
+            f'<div class="es-warnings"><ul>{items}</ul></div>',
             unsafe_allow_html=True,
         )
 
@@ -259,7 +259,7 @@ def render_finding_card(f: Finding) -> None:
   <span style="color:{theme.TEXT_1};font-size:13px;font-family:'JetBrains Mono',monospace">
     {html.escape(f.file)}{':' + str(f.line) if f.line else ''}
   </span>
-  <span class="sb-finding-row__src" style="color:{src_style['color']}">
+  <span class="es-finding-row__src" style="color:{src_style['color']}">
     {html.escape(src_style['label'])}
   </span>
 </div>
@@ -271,14 +271,14 @@ def render_finding_card(f: Finding) -> None:
         )
         if f.snippet:
             st.markdown(
-                f'<div class="sb-snippet">{html.escape(f.snippet)}</div>',
+                f'<div class="es-snippet">{html.escape(f.snippet)}</div>',
                 unsafe_allow_html=True,
             )
         if f.suggested_fix:
             st.markdown(
                 f"""
-<div class="sb-fix-callout">
-  <span class="sb-fix-callout__label">✓ Suggested fix:</span>
+<div class="es-fix-callout">
+  <span class="es-fix-callout__label">✓ Suggested fix:</span>
   {html.escape(f.suggested_fix)}
 </div>
 """,
@@ -305,7 +305,7 @@ def render_findings_list(report: ScanReport,
             # No findings at all: hero card.
             st.markdown(
                 f"""
-<div class="sb-card" style="border-color:{theme.ACCENT};margin-top:12px">
+<div class="es-card" style="border-color:{theme.ACCENT};margin-top:12px">
   <div style="font-size:18px;font-weight:600;color:{theme.ACCENT}">✓ No issues found</div>
   <div style="font-size:13px;color:{theme.TEXT_1};margin-top:6px">
     This skill is clean against the current ruleset. Static analysis is not

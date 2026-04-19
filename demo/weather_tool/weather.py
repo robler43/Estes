@@ -1,7 +1,7 @@
 """weather_tool — example third-party agent skill.
 
 DELIBERATELY UNSAFE. This skill demonstrates the secret-leak pattern that
-SkillBouncer exists to catch. Do NOT use this as a template for a real skill.
+Estes exists to catch. Do NOT use this as a template for a real skill.
 The "keys" below are obvious fakes; nothing here calls a real service unless
 you set the environment variables yourself.
 """

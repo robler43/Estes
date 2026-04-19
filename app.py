@@ -1,4 +1,4 @@
-"""SkillBouncer dashboard — Streamlit frontend for the Auditor.
+"""Estes dashboard — Streamlit frontend for the Auditor.
 
 Run with: streamlit run app.py
 
@@ -24,7 +24,7 @@ from ui import components
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="SkillBouncer",
+    page_title="Estes",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -66,7 +66,7 @@ with upload_col:
         on_change=_reset_report,
     )
 
-    st.markdown('<div class="sb-upload-or">or paste a public GitHub link</div>',
+    st.markdown('<div class="es-upload-or">or paste a public GitHub link</div>',
                 unsafe_allow_html=True)
 
     github_url = st.text_input(
@@ -100,7 +100,7 @@ def _materialize_upload() -> Path | None:
     """
     if uploaded is None:
         return None
-    tmp_dir = Path(tempfile.mkdtemp(prefix="skillbouncer_ui_"))
+    tmp_dir = Path(tempfile.mkdtemp(prefix="estes_ui_"))
     st.session_state["scan_root_dir"] = str(tmp_dir)
 
     if uploaded.name.lower().endswith(".zip"):
@@ -144,7 +144,7 @@ st.markdown('<div style="height:14px"></div>', unsafe_allow_html=True)
 
 bar = st.columns([1.2, 1.2, 1.2, 4])
 with bar[0]:
-    st.markdown('<div class="sb-primary">', unsafe_allow_html=True)
+    st.markdown('<div class="es-primary">', unsafe_allow_html=True)
     if st.button("Scan Skill", disabled=not source_ready, use_container_width=True):
         _run_scan()
         st.rerun()
@@ -154,7 +154,7 @@ with bar[1]:
         "Apply Wrapper",
         disabled=not non_safe,
         use_container_width=True,
-        help=("Run the SkillBouncer Wrapper as a local proxy."
+        help=("Run the Estes Wrapper as a local proxy."
               if non_safe else
               "Wrapper is only useful when findings exist."),
     ):
@@ -162,7 +162,7 @@ with bar[1]:
 with bar[2]:
     download_disabled = not (non_safe and zip_or_dir_source)
     download_help = (
-        "Generates a stub-patched copy with `# skillbouncer: ignore` markers."
+        "Generates a stub-patched copy with `# estes: ignore` markers."
         if not download_disabled else
         "Available for .zip uploads or GitHub sources with at least one finding."
     )
@@ -210,7 +210,7 @@ The Wrapper exposes `POST /redact` (real-time redaction) and `POST /scan`
 
 def _build_fixed_zip(report: ScanReport) -> bytes:
     """Stub auto-patch: produce a zip mirroring the scanned root with
-    `# skillbouncer: ignore` (or `// skillbouncer: ignore`) markers appended
+    `# estes: ignore` (or `// estes: ignore`) markers appended
     on every flagged line. Reads from disk via the report's recorded paths
     where possible; falls back to the in-memory upload bytes."""
     findings_by_file: dict[str, set[int]] = {}
@@ -222,11 +222,11 @@ def _build_fixed_zip(report: ScanReport) -> bytes:
         suffix = Path(path).suffix.lower()
         if suffix in {".py", ".sh", ".rb", ".yaml", ".yml", ".toml", ".env",
                       ".ini"}:
-            return "  # skillbouncer: ignore"
+            return "  # estes: ignore"
         if suffix in {".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".go",
                       ".java", ".c", ".cpp", ".h"}:
-            return "  // skillbouncer: ignore"
-        return "  # skillbouncer: ignore"
+            return "  // estes: ignore"
+        return "  # estes: ignore"
 
     # Resolve actual on-disk root: scan_skill records skill_root relative to
     # its temp workspace. For the UI we re-read from the materialized upload
@@ -264,22 +264,22 @@ def _build_fixed_zip(report: ScanReport) -> bytes:
                         idx = ln - 1
                         if 0 <= idx < len(lines):
                             line = lines[idx].rstrip("\n")
-                            if "skillbouncer: ignore" not in line:
+                            if "estes: ignore" not in line:
                                 lines[idx] = line + _comment_for(rel) + "\n"
                 zf.writestr(rel, "".join(lines))
 
         # Always include a patch sheet so users have a manifest of changes.
-        sheet = "# SkillBouncer stub auto-patch\n\n"
+        sheet = "# Estes stub auto-patch\n\n"
         sheet += f"Source: {report.source}\n"
         sheet += f"Severity: {report.severity}  Score: {report.risk_score}\n\n"
-        sheet += "## Lines marked with `skillbouncer: ignore`\n\n"
+        sheet += "## Lines marked with `estes: ignore`\n\n"
         for file, lines in sorted(findings_by_file.items()):
             sheet += f"- {file}: {sorted(lines)}\n"
         sheet += (
             "\n> **Stub patch — review before redistributing.** This silences "
             "findings, it does not fix the underlying leak.\n"
         )
-        zf.writestr("SKILLBOUNCER_PATCH.md", sheet)
+        zf.writestr("ESTES_PATCH.md", sheet)
 
     return buf.getvalue()
 
@@ -321,8 +321,8 @@ title_col, sev_col, src_col = st.columns([3, 1, 1], gap="small")
 with title_col:
     st.markdown(
         f"""
-<div class="sb-section-title">
-  <h3>Findings <span class="sb-section-title__count">({len(report.findings)})</span></h3>
+<div class="es-section-title">
+  <h3>Findings <span class="es-section-title__count">({len(report.findings)})</span></h3>
 </div>
 """,
         unsafe_allow_html=True,

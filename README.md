@@ -1,4 +1,4 @@
-# SkillBouncer
+# Estes
 
 **The AI-powered bouncer for third-party AI agent skills**
 
@@ -20,9 +20,9 @@ This is a **silent, no-hack-required supply-chain vulnerability** that affects e
 
 IBM has explicitly called out this class of risk in their April 2026 agentic security announcements, emphasizing the need for runtime guardrails and governance in platforms like **watsonx Orchestrate** (which ships with 500+ third-party skills).
 
-## 🛡️ What SkillBouncer Does
+## 🛡️ What Estes Does
 
-SkillBouncer is a **two-layer defense** built specifically for this problem:
+Estes is a **two-layer defense** built specifically for this problem:
 
 ### 1. Pre-Install Auditor (Skill Checkup)
 
@@ -35,7 +35,7 @@ SkillBouncer is a **two-layer defense** built specifically for this problem:
 
 ### 2. Runtime Wrapper / Bouncer (Middleware)
 
-- Runs as a lightweight local FastAPI proxy (`skillbouncer start`).
+- Runs as a lightweight local FastAPI proxy (`estes start`).
 - Intercepts **every tool output** before it reaches the LLM context.
 - Automatically detects and **redacts secrets** in real time.
 - Adds a warning log and optional human approval gate.
@@ -50,7 +50,7 @@ SkillBouncer is a **two-layer defense** built specifically for this problem:
 
 This project directly addresses the **"Security in an AI-First World"** track sponsored by IBM.
 
-It solves the exact supply-chain and runtime leakage problems IBM is highlighting with watsonx Orchestrate and Guardium AI Security. By adding observability and policy enforcement to open agent ecosystems, SkillBouncer helps enterprises adopt agentic AI safely and at scale.
+It solves the exact supply-chain and runtime leakage problems IBM is highlighting with watsonx Orchestrate and Guardium AI Security. By adding observability and policy enforcement to open agent ecosystems, Estes helps enterprises adopt agentic AI safely and at scale.
 
 ## 🏗️ Architecture
 
@@ -61,7 +61,7 @@ User → Antigravity / OpenClaw / Claude Code
             ↓
    Tool Output (stdout + result)
             ↓
-   SkillBouncer Wrapper (localhost:8000)
+   Estes Wrapper (localhost:8000)
             ↓
    Secret Detection + Redaction
             ↓
@@ -75,7 +75,7 @@ User → Antigravity / OpenClaw / Claude Code
 ## 🚀 Quick Start
 
 ```bash
-cd /Users/robinhoesli/Desktop/projects/SkillBouncer
+cd /Users/robinhoesli/Desktop/projects/Estes
 
 # 1. Install dependencies
 pip install -r requirements.txt
@@ -86,13 +86,13 @@ streamlit run app.py
 # 3. (Optional) Run the Runtime Wrapper
 uvicorn wrapper:app --reload
 # or, once the CLI is added:
-skillbouncer start
+estes start
 ```
 
 ## 📁 Project Structure
 
 ```
-SkillBouncer/
+Estes/
 ├── app.py                    # Streamlit frontend + Auditor UI
 ├── auditor.py                # Core skill scanning logic
 ├── wrapper.py                # FastAPI runtime bouncer
@@ -108,7 +108,7 @@ SkillBouncer/
 
 1. Upload the `weather_tool` from the `demo/` folder.
 2. See **High Risk** score + exact findings.
-3. Run Live Demo → **Before** (key leaks) vs **After** (SkillBouncer redacts it).
+3. Run Live Demo → **Before** (key leaks) vs **After** (Estes redacts it).
 4. Show that the chat remains safe even if shared or exported.
 
 ## 🛠 Tech Stack
@@ -124,7 +124,7 @@ SkillBouncer/
 - Native watsonx.governance API integration for centralized policy & audit logging
 - Auto-patch generation (fix the skill and return a clean version)
 - Chat Shield warning before sharing/exporting conversations
-- CLI tool (`skillbouncer scan` and `skillbouncer start`)
+- CLI tool (`estes scan` and `estes start`)
 
 ## 📌 Built For
 
