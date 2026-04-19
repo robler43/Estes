@@ -56,10 +56,29 @@ FINDING_SEVERITY_STYLE: dict[str, dict[str, str]] = {
 }
 
 # Finding source ∈ {static, ast, llm}
+# Each entry now carries a label + icon + plain-English description so the
+# dashboard can surface *which pass* caught a finding (the user has been
+# asking "was this a regex hit, taint analysis, or the LLM?" — give them
+# a one-glance answer).
 SOURCE_STYLE: dict[str, dict[str, str]] = {
-    "static": {"color": TEXT_1, "label": "static"},
-    "ast": {"color": INFO, "label": "ast"},
-    "llm": {"color": ACCENT, "label": "llm"},
+    "static": {
+        "color":  WARN,
+        "label":  "STATIC",
+        "icon":   "▦",
+        "desc":   "Regex / entropy pattern match",
+    },
+    "ast": {
+        "color":  INFO,
+        "label":  "AST",
+        "icon":   "⌬",
+        "desc":   "Python AST taint analysis",
+    },
+    "llm": {
+        "color":  ACCENT,
+        "label":  "LLM",
+        "icon":   "✨",
+        "desc":   "Deep-semantic LLM review",
+    },
 }
 
 

@@ -346,6 +346,8 @@ with src_col:
         label_visibility="collapsed",
     )
 
+components.render_source_summary(report)
+
 components.render_findings_list(
     report,
     severity_filter=st.session_state["severity_filter"],

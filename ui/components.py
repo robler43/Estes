@@ -226,17 +226,24 @@ def _severity_glyph(sev: str) -> str:
 def _finding_label_text(f: Finding) -> str:
     """Plain-text expander label.
 
-    Streamlit 1.39 does not reliably support full HTML in expander labels —
-    using a leading glyph plus padded text preserves visual hierarchy across
-    versions. Per ui_design.md §9 fallback note.
+    Streamlit 1.39 does not reliably support full HTML in expander labels,
+    so we encode the analysis source as the leading token (where the eye
+    lands first) followed by the severity glyph + label. Per ui_design.md
+    §9 fallback note.
     """
     sev_label = theme.FINDING_SEVERITY_STYLE.get(
         f.severity, theme.FINDING_SEVERITY_STYLE["info"]
     )["label"]
+    src_label = theme.SOURCE_STYLE.get(
+        f.source, theme.SOURCE_STYLE["static"]
+    )["label"]
     glyph = _severity_glyph(f.severity)
     loc = f"{f.file}:{f.line}" if f.file else "(top-level)"
-    src = f.source
-    return f"{glyph}  {sev_label:<7}  {f.id:<22}  {loc}  [{src}]"
+    # Layout:  [STATIC]  ▲ HIGH    ES-PRINT-CRED-01      weather.py:12
+    return (
+        f"[{src_label:<6}]  {glyph} {sev_label:<7}  "
+        f"{f.id:<24}  {loc}"
+    )
 
 
 def render_finding_card(f: Finding) -> None:
@@ -249,7 +256,12 @@ def render_finding_card(f: Finding) -> None:
     with st.expander(label, expanded=False):
         st.markdown(
             f"""
-<div style="display:flex;gap:14px;align-items:center;margin-bottom:10px">
+<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+  <span class="es-src-pill" style="color:{src_style['color']}">
+    <span class="es-src-pill__icon">{html.escape(src_style.get('icon', '·'))}</span>
+    {html.escape(src_style['label'])}
+    <span class="es-src-pill__desc">{html.escape(src_style.get('desc', ''))}</span>
+  </span>
   <span style="color:{sev_style['color']};font-weight:600;font-size:12px;letter-spacing:0.8px">
     {html.escape(sev_style['label'])}
   </span>
@@ -258,9 +270,6 @@ def render_finding_card(f: Finding) -> None:
   </span>
   <span style="color:{theme.TEXT_1};font-size:13px;font-family:'JetBrains Mono',monospace">
     {html.escape(f.file)}{':' + str(f.line) if f.line else ''}
-  </span>
-  <span class="es-finding-row__src" style="color:{src_style['color']}">
-    {html.escape(src_style['label'])}
   </span>
 </div>
 <div style="font-size:14px;color:{theme.TEXT_0};line-height:1.5">
@@ -284,6 +293,41 @@ def render_finding_card(f: Finding) -> None:
 """,
                 unsafe_allow_html=True,
             )
+
+
+def render_source_summary(report: ScanReport) -> None:
+    """Strip above the findings list — counts of how each pass contributed.
+
+    Renders three pills (STATIC / AST / LLM) with the number of findings each
+    pass produced. Empty passes are dimmed so the user can tell at a glance
+    whether the LLM pass actually ran. Hides itself when there are no
+    findings (the empty-state hero card already conveys "all clear").
+    """
+    if not report.findings:
+        return
+    counts: dict[str, int] = {"static": 0, "ast": 0, "llm": 0}
+    for f in report.findings:
+        counts[f.source] = counts.get(f.source, 0) + 1
+
+    chips = []
+    for src in ("static", "ast", "llm"):
+        style = theme.SOURCE_STYLE[src]
+        n = counts.get(src, 0)
+        chips.append(
+            f'<span class="es-src-summary__chip" data-empty="{str(n == 0).lower()}" '
+            f'style="color:{style["color"]}">'
+            f'<span>{html.escape(style.get("icon", "·"))}</span>'
+            f'{html.escape(style["label"])}'
+            f'<span class="num">{n}</span>'
+            f'</span>'
+        )
+    st.markdown(
+        f'<div class="es-src-summary">'
+        f'<span class="es-src-summary__lab">Found by</span>'
+        f'{"".join(chips)}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 
 _RENDER_CAP = 50
@@ -346,5 +390,6 @@ __all__ = [
     "render_fix_banner",
     "render_header",
     "render_score_panel",
+    "render_source_summary",
     "render_warnings",
 ]

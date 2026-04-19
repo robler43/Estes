@@ -236,6 +236,67 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* ---------- "Found by" source pill (prominent, in card body) ------------ */
+
+.es-src-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+}
+.es-src-pill__icon {
+  font-size: 13px; line-height: 1;
+}
+.es-src-pill__desc {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-1);
+  text-transform: none;
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+/* ---------- "Found by" summary strip (above the findings list) --------- */
+
+.es-src-summary {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  margin: 4px 0 14px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.es-src-summary__lab {
+  text-transform: uppercase; letter-spacing: 0.15em;
+  font-weight: 700; font-size: 11px;
+  color: var(--text-2);
+  margin-right: 4px;
+}
+.es-src-summary__chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+}
+.es-src-summary__chip[data-empty="true"] {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+.es-src-summary__chip .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  color: currentColor;
+}
+
 /* Expander overrides */
 [data-testid="stExpander"] {
   background: var(--bg-1);
