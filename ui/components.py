@@ -13,7 +13,7 @@ from pathlib import Path
 import streamlit as st
 
 from auditor import Finding, ScanReport
-from ui import theme
+from ui import explainers, theme
 
 # Inlined logo: kept here so app.py has no static-file-serving dependency.
 # Source of truth: assets/logo.svg.
@@ -247,16 +247,28 @@ def _finding_label_text(f: Finding) -> str:
 
 
 def render_finding_card(f: Finding) -> None:
+    """Render a single finding as a "What was wrong → Why it matters →
+    What to change" expander.
+
+    Each section is clearly labeled so the audience (a developer triaging a
+    third-party skill) can answer two questions in under five seconds:
+
+      • What did this skill do that I should worry about?
+      • What should it look like instead?
+    """
     sev_style = theme.FINDING_SEVERITY_STYLE.get(
         f.severity, theme.FINDING_SEVERITY_STYLE["info"]
     )
     src_style = theme.SOURCE_STYLE.get(f.source, theme.SOURCE_STYLE["static"])
+    explainer = explainers.explain(f.category, f.id)
+    friendly_msg = explainers.humanize_message(f.id, f.message)
 
     label = _finding_label_text(f)
     with st.expander(label, expanded=False):
+        # ---- Header strip: source pill + severity + rule id + location ----
         st.markdown(
             f"""
-<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
   <span class="es-src-pill" style="color:{src_style['color']}">
     <span class="es-src-pill__icon">{html.escape(src_style.get('icon', '·'))}</span>
     {html.escape(src_style['label'])}
@@ -272,23 +284,79 @@ def render_finding_card(f: Finding) -> None:
     {html.escape(f.file)}{':' + str(f.line) if f.line else ''}
   </span>
 </div>
-<div style="font-size:14px;color:{theme.TEXT_0};line-height:1.5">
-  {html.escape(f.message)}
+""",
+            unsafe_allow_html=True,
+        )
+
+        # ---- Section 1: What was wrong (message + BEFORE snippet) --------
+        before_block = ""
+        if f.snippet:
+            before_block = (
+                f'<div class="es-diff-cap">{html.escape(explainer.before_caption)}</div>'
+                f'<pre class="es-diff es-diff--before">'
+                f'<span class="es-diff__sigil">−</span>'
+                f'<span>{html.escape(f.snippet)}</span>'
+                f'</pre>'
+            )
+        st.markdown(
+            f"""
+<div class="es-section">
+  <div class="es-section__head es-section__head--bad">
+    <span class="es-section__icon">✕</span>
+    <span class="es-section__label">What was wrong</span>
+  </div>
+  <div class="es-section__body">
+    <div style="font-size:14px;color:{theme.TEXT_0};line-height:1.55;margin-bottom:8px">
+      {html.escape(friendly_msg)}
+    </div>
+    {before_block}
+  </div>
 </div>
 """,
             unsafe_allow_html=True,
         )
-        if f.snippet:
-            st.markdown(
-                f'<div class="es-snippet">{html.escape(f.snippet)}</div>',
-                unsafe_allow_html=True,
+
+        # ---- Section 2: Why it matters (category-aware risk explanation) -
+        st.markdown(
+            f"""
+<div class="es-section">
+  <div class="es-section__head es-section__head--why">
+    <span class="es-section__icon">⚠</span>
+    <span class="es-section__label">Why it matters</span>
+  </div>
+  <div class="es-section__body">
+    <div style="font-size:13.5px;color:{theme.TEXT_1};line-height:1.6">
+      {html.escape(explainer.why)}
+    </div>
+  </div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+        # ---- Section 3: What to change (fix prose + AFTER template) ------
+        fix_prose = (f.suggested_fix or "").strip()
+        after_block = ""
+        if explainer.after_template:
+            after_block = (
+                '<div class="es-diff-cap">Recommended pattern (template):</div>'
+                f'<pre class="es-diff es-diff--after">'
+                f'<span class="es-diff__sigil">+</span>'
+                f'<span>{html.escape(explainer.after_template)}</span>'
+                f'</pre>'
             )
-        if f.suggested_fix:
+        if fix_prose or after_block:
             st.markdown(
                 f"""
-<div class="es-fix-callout">
-  <span class="es-fix-callout__label">✓ Suggested fix:</span>
-  {html.escape(f.suggested_fix)}
+<div class="es-section">
+  <div class="es-section__head es-section__head--good">
+    <span class="es-section__icon">✓</span>
+    <span class="es-section__label">What to change</span>
+  </div>
+  <div class="es-section__body">
+    {f'<div style="font-size:13.5px;color:{theme.TEXT_0};line-height:1.6;margin-bottom:8px">{html.escape(fix_prose)}</div>' if fix_prose else ''}
+    {after_block}
+  </div>
 </div>
 """,
                 unsafe_allow_html=True,

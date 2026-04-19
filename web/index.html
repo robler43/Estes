@@ -20,8 +20,8 @@
           mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
         },
         colors: {
-          neon: '#00ff9d',
-          ink:  '#04080a',
+          neon: '#4d8bff',
+          ink:  '#0c1a36',
         },
       }
     }
@@ -29,18 +29,21 @@
 </script>
 
 <style>
-  /* ----------  Tokens  ---------- */
+  /* ----------  Tokens (agentNet navy palette)  ---------- */
   :root {
-    --neon: #00ff9d;
-    --ink:        #04080a;
-    --ink-card:   #070d10;
-    --text:       #eaf3ee;
-    --text-mute:  #8a9d95;
-    --text-dim:   #5b6e67;
-    --line:       rgba(255,255,255,0.06);
-    --line-hover: rgba(0,255,157,0.45);
-    --warn:       #ffd166;
-    --danger:     #ff5c7a;
+    --neon:       #4d8bff;          /* primary royal blue (replaces former green accent) */
+    --neon-soft:  #6ea4ff;
+    --cyan:       #56e0c4;          /* mint/cyan secondary highlight */
+    --ink:        #0c1a36;          /* deep navy body background */
+    --ink-card:   #142a52;          /* navy card surface */
+    --ink-pane:   #0f2244;          /* darker navy for code blocks / inputs */
+    --text:       #e6ecf7;
+    --text-mute:  #93a4c4;
+    --text-dim:   #6378a0;
+    --line:       rgba(125,165,235,0.10);
+    --line-hover: rgba(91,154,255,0.45);
+    --warn:       #ff9249;          /* orange (matches the orange graph nodes) */
+    --danger:     #ff5e7a;
   }
 
   html, body {
@@ -53,11 +56,11 @@
     font-feature-settings: "ss01", "cv11";
   }
 
-  /* Soft, single-stop top wash. No radial gradient blobs anywhere else. */
+  /* Soft, single-stop top wash. */
   .top-wash {
     position: fixed; top: 0; left: 0; right: 0; height: 520px;
     background:
-      radial-gradient(60% 100% at 50% 0%, rgba(0,255,157,0.10), transparent 70%);
+      radial-gradient(60% 100% at 50% 0%, rgba(77,139,255,0.16), transparent 70%);
     pointer-events: none;
     z-index: 0;
   }
@@ -73,7 +76,7 @@
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 11px;
     letter-spacing: 0.3em;
-    color: var(--neon);
+    color: var(--text-mute);
     text-transform: uppercase;
   }
   .h1 {
@@ -119,7 +122,7 @@
   .btn:hover {
     border-color: var(--neon);
     color: #ffffff;
-    box-shadow: 0 0 0 1px rgba(0,255,157,0.25), 0 0 24px rgba(0,255,157,0.20);
+    box-shadow: 0 0 0 1px rgba(77,139,255,0.25), 0 0 24px rgba(77,139,255,0.20);
   }
   .btn .dot {
     width: 7px; height: 7px; border-radius: 999px;
@@ -129,28 +132,29 @@
 
   .btn-primary {
     background: var(--neon);
-    color: #03100b;
+    color: #ffffff;
     border-color: var(--neon);
     font-weight: 600;
+    box-shadow: 0 6px 22px -6px rgba(77,139,255,0.55);
   }
   .btn-primary:hover {
-    background: #2bffaf;
-    border-color: #2bffaf;
-    color: #03100b;
-    box-shadow: 0 0 28px rgba(0,255,157,0.45);
+    background: var(--neon-soft);
+    border-color: var(--neon-soft);
+    color: #ffffff;
+    box-shadow: 0 8px 28px -6px rgba(77,139,255,0.65);
   }
 
   /* ----------  Cards  ---------- */
   .card {
     position: relative;
     border-radius: 14px;
-    background: #070d10;
+    background: var(--ink-card);
     border: 1px solid var(--line);
     transition: border-color .4s ease, box-shadow .4s ease;
   }
   .card:hover {
     border-color: var(--line-hover);
-    box-shadow: 0 0 0 1px rgba(0,255,157,0.12), 0 24px 60px -32px rgba(0,255,157,0.25);
+    box-shadow: 0 0 0 1px rgba(77,139,255,0.12), 0 24px 60px -32px rgba(77,139,255,0.25);
   }
   .card-pad { padding: 28px; }
 
@@ -188,17 +192,17 @@
   /* ----------  Drop zone  ---------- */
   .drop {
     position: relative;
-    border: 1px dashed rgba(255,255,255,0.14);
+    border: 1px dashed rgba(125,165,235,0.18);
     border-radius: 16px;
-    background: #060b0d;
+    background: var(--ink-card);
     padding: 56px 32px;
     text-align: center;
     transition: border-color .35s ease, background .35s ease, box-shadow .35s ease;
   }
   .drop:hover, .drop.is-drag {
     border-color: var(--neon);
-    background: rgba(0,255,157,0.04);
-    box-shadow: inset 0 0 0 1px rgba(0,255,157,0.18), 0 0 40px rgba(0,255,157,0.18);
+    background: rgba(77,139,255,0.05);
+    box-shadow: inset 0 0 0 1px rgba(77,139,255,0.18), 0 0 40px rgba(77,139,255,0.18);
   }
   .drop .ico {
     width: 48px; height: 48px;
@@ -215,40 +219,76 @@
     color: var(--text-dim);
     text-transform: uppercase;
   }
-  .drop .url-row {
-    display: flex; gap: 8px;
-    max-width: 460px;
+
+  /* ----------  URL pill (sibling of drop zone — matched aesthetic)  ---------- */
+  .url-or {
+    display: inline-block;
+    margin: 22px 0 14px;
+    font-family: 'JetBrains Mono';
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .url-pill {
+    display: flex; align-items: center;
+    gap: 10px;
+    max-width: 540px;
     margin: 0 auto;
+    padding: 5px 5px 5px 16px;
+    border-radius: 999px;
+    background: var(--ink-card);
+    border: 1px dashed rgba(125,165,235,0.18);
+    transition: border-color .35s ease, background .35s ease, box-shadow .35s ease;
   }
-  .drop input[type="text"] {
-    flex: 1;
-    height: 42px;
-    padding: 0 14px;
-    border-radius: 10px;
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: var(--text);
-    font-size: 13.5px;
-    transition: border-color .25s ease, box-shadow .25s ease;
-    outline: none;
-  }
-  .drop input[type="text"]::placeholder { color: var(--text-dim); }
-  .drop input[type="text"]:focus {
+  .url-pill:hover { border-color: rgba(77,139,255,0.30); }
+  .url-pill:focus-within {
     border-color: var(--neon);
-    box-shadow: 0 0 0 3px rgba(0,255,157,0.15);
+    background: rgba(77,139,255,0.05);
+    box-shadow: inset 0 0 0 1px rgba(77,139,255,0.18), 0 0 28px rgba(77,139,255,0.18);
+  }
+  .url-pill .ico {
+    width: 14px; height: 14px;
+    flex-shrink: 0;
+    color: var(--text-dim);
+    transition: color .25s ease;
+  }
+  .url-pill:focus-within .ico { color: var(--neon); }
+  .url-pill input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.01em;
+    outline: none;
+    padding: 0;
+  }
+  .url-pill input[type="text"]::placeholder {
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono';
+    letter-spacing: 0.04em;
+  }
+  .url-pill button {
+    height: 36px !important;
+    padding: 0 18px !important;
+    flex-shrink: 0;
   }
 
   /* ----------  Risk gauge  ---------- */
   .gauge-wrap { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1/1; margin: 0 auto; }
   .gauge-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-  .gauge-track { stroke: rgba(255,255,255,0.05); }
+  .gauge-track { stroke: rgba(125,165,235,0.10); }
   .gauge-fill {
-    stroke: var(--neon);
+    stroke: var(--cyan);
     stroke-linecap: round;
     transition: stroke-dashoffset 1.6s cubic-bezier(.2,.7,.2,1), stroke .6s ease, filter .6s ease;
-    filter: drop-shadow(0 0 12px rgba(0,255,157,0.55));
+    filter: drop-shadow(0 0 12px rgba(86,224,196,0.55));
   }
-  .gauge-fill.is-warn   { stroke: var(--warn);   filter: drop-shadow(0 0 12px rgba(255,209,102,0.55)); }
+  .gauge-fill.is-warn   { stroke: var(--warn);   filter: drop-shadow(0 0 12px rgba(255,146,73,0.55)); }
   .gauge-fill.is-danger { stroke: var(--danger); filter: drop-shadow(0 0 14px rgba(255,92,122,0.60)); }
 
   .gauge-center {
@@ -281,11 +321,11 @@
     color: var(--text-mute);
   }
   .gauge-state .pip { width: 6px; height: 6px; border-radius: 999px; background: var(--text-dim); }
-  .gauge-state.is-safe   { color: var(--neon);   border-color: rgba(0,255,157,0.35); }
-  .gauge-state.is-safe   .pip { background: var(--neon);   box-shadow: 0 0 8px var(--neon); }
-  .gauge-state.is-warn   { color: var(--warn);   border-color: rgba(255,209,102,0.35); }
+  .gauge-state.is-safe   { color: var(--cyan);   border-color: rgba(86,224,196,0.40); }
+  .gauge-state.is-safe   .pip { background: var(--cyan);   box-shadow: 0 0 8px var(--cyan); }
+  .gauge-state.is-warn   { color: var(--warn);   border-color: rgba(255,146,73,0.45); }
   .gauge-state.is-warn   .pip { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
-  .gauge-state.is-danger { color: var(--danger); border-color: rgba(255,92,122,0.35); }
+  .gauge-state.is-danger { color: var(--danger); border-color: rgba(255,92,122,0.45); }
   .gauge-state.is-danger .pip { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
 
   /* ----------  Code blocks (monochrome)  ---------- */
@@ -293,8 +333,8 @@
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 12.5px;
     line-height: 1.75;
-    color: #d6e6dd;
-    background: rgba(0,0,0,0.35);
+    color: #d6e1f5;
+    background: var(--ink-pane);
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 16px 18px;
@@ -317,7 +357,7 @@
     background: transparent;
     transition: color .3s ease, border-color .3s ease, box-shadow .3s ease;
   }
-  .badge:hover { color: #ffffff; border-color: var(--line-hover); box-shadow: 0 0 18px rgba(0,255,157,0.2); }
+  .badge:hover { color: #ffffff; border-color: var(--line-hover); box-shadow: 0 0 18px rgba(77,139,255,0.2); }
   .badge .pip  { width: 6px; height: 6px; border-radius: 999px; background: var(--neon); box-shadow: 0 0 6px var(--neon); }
 
   /* ----------  Number tag  ---------- */
@@ -350,11 +390,11 @@
   /* ----------  Finding card  ---------- */
   .finding {
     border-radius: 12px;
-    background: #060b0d;
+    background: var(--ink-card);
     border: 1px solid var(--line);
     transition: border-color .35s ease, box-shadow .35s ease;
   }
-  .finding:hover { border-color: var(--line-hover); box-shadow: 0 0 0 1px rgba(0,255,157,0.10); }
+  .finding:hover { border-color: var(--line-hover); box-shadow: 0 0 0 1px rgba(77,139,255,0.10); }
   .finding > header {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     padding: 16px 20px;
@@ -397,7 +437,7 @@
     border-left: 2px solid var(--danger);
     padding: 0 6px;
     margin-left: -8px;
-    color: #ffd1d8;
+    color: #ffd6dd;
   }
   .code .add {
     color: var(--neon);
@@ -410,7 +450,7 @@
     padding: 16px 20px;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #060b0d;
+    background: var(--ink-card);
     margin-bottom: 22px;
   }
   .action-bar .meta {
@@ -422,6 +462,173 @@
   .action-bar .meta b { color: #fff; font-weight: 500; }
   .action-bar .meta .sep { color: var(--text-dim); }
 
+  /* ----------  Scanning state  ---------- */
+  .btn[disabled], .btn:disabled,
+  .btn.is-busy {
+    opacity: .5;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+  .url-pill.is-busy {
+    opacity: .55;
+    pointer-events: none;
+    border-style: dashed;
+    border-color: rgba(255,255,255,0.10);
+    box-shadow: none;
+  }
+  .url-pill.is-busy input,
+  .url-pill.is-busy button { cursor: not-allowed; }
+  .drop.is-busy {
+    pointer-events: none;
+    cursor: not-allowed;
+    border-color: rgba(77,139,255,0.32);
+    background: rgba(77,139,255,0.04);
+    box-shadow: inset 0 0 0 1px rgba(77,139,255,0.10);
+  }
+  .drop.is-busy .ico { animation: drop-pulse 1.6s ease-in-out infinite; }
+
+  #gauge.is-scanning svg {
+    animation: gauge-spin 1.4s linear infinite;
+  }
+  #gauge.is-scanning .gauge-fill {
+    stroke: var(--neon);
+    stroke-dasharray: 22 100;
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 8px rgba(77,139,255,0.45));
+  }
+  #gauge.is-scanning .num {
+    color: var(--neon);
+    letter-spacing: 0.2em;
+    font-size: 38px;
+  }
+  .gauge-state.is-scanning {
+    color: var(--neon);
+    border-color: rgba(77,139,255,0.35);
+  }
+  .gauge-state.is-scanning .pip {
+    background: var(--neon);
+    box-shadow: 0 0 8px var(--neon);
+    animation: pip-pulse 0.9s ease-in-out infinite;
+  }
+
+  @keyframes gauge-spin {
+    from { transform: rotate(-90deg); }
+    to   { transform: rotate(270deg); }
+  }
+  @keyframes pip-pulse {
+    0%, 100% { opacity: 1;   transform: scale(1); }
+    50%      { opacity: 0.3; transform: scale(0.7); }
+  }
+  @keyframes drop-pulse {
+    0%, 100% { opacity: 0.9; }
+    50%      { opacity: 0.4; }
+  }
+
+  /* ----------  Wrapper modal  ---------- */
+  .modal-back {
+    position: fixed; inset: 0; z-index: 80;
+    background: rgba(2, 8, 6, 0.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s ease;
+  }
+  .modal-back.is-open { opacity: 1; pointer-events: auto; }
+  .modal {
+    width: min(960px, 100%);
+    max-height: 88vh;
+    display: flex; flex-direction: column;
+    background: var(--ink-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(77,139,255,0.05) inset;
+    transform: translateY(8px);
+    transition: transform .25s ease;
+  }
+  .modal-back.is-open .modal { transform: translateY(0); }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 18px 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-head h3 {
+    font-size: 14.5px; font-weight: 500; color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .modal-head .sub {
+    font-family: 'JetBrains Mono'; font-size: 11px;
+    color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .modal-close {
+    width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    color: var(--text-mute); background: transparent; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .modal-close:hover { color: #fff; border-color: rgba(77,139,255,0.35); }
+  .modal-body {
+    padding: 18px 22px 22px; overflow: auto;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .wrap-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 720px) { .wrap-grid { grid-template-columns: 1fr; } }
+  .wrap-pane {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #04090a;
+    display: flex; flex-direction: column;
+    min-height: 240px;
+  }
+  .wrap-pane header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    font-family: 'JetBrains Mono'; font-size: 11px;
+    color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .wrap-pane header b { color: var(--text-mute); font-weight: 500; }
+  .wrap-pane textarea, .wrap-pane pre {
+    flex: 1;
+    margin: 0; padding: 12px 14px;
+    background: transparent; color: var(--text);
+    font-family: 'JetBrains Mono'; font-size: 12px; line-height: 1.55;
+    border: 0; outline: 0; resize: vertical;
+    min-height: 200px; max-height: 360px;
+    overflow: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .wrap-pane textarea::placeholder { color: var(--text-dim); }
+  .wrap-pane mark {
+    background: rgba(77,139,255,0.16);
+    color: #c9defb;
+    border: 1px solid rgba(77,139,255,0.40);
+    border-radius: 4px;
+    padding: 0 4px;
+  }
+  .modal-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    padding-top: 4px;
+  }
+  .modal-actions .stat {
+    font-family: 'JetBrains Mono'; font-size: 12px;
+    color: var(--text-mute);
+  }
+  .modal-actions .stat b { color: var(--neon); font-weight: 500; }
+  .modal-snippet {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #04090a;
+    padding: 12px 14px;
+    font-family: 'JetBrains Mono'; font-size: 11.5px; line-height: 1.6;
+    color: var(--text-mute);
+    overflow-x: auto;
+  }
+  .modal-snippet .k { color: var(--neon); }
+  .modal-snippet .c { color: var(--text-dim); }
+
   /* ----------  Hidden helper  ---------- */
   .is-hidden { display: none !important; }
 
@@ -430,7 +637,7 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 
-  ::selection { background: rgba(0,255,157,0.3); color: #03100b; }
+  ::selection { background: rgba(77,139,255,0.4); color: #ffffff; }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: var(--ink); }
@@ -459,10 +666,9 @@
       <a href="#scan"      class="nav-link">Scan</a>
       <a href="#features"  class="nav-link">Platform</a>
       <a href="#demo"      class="nav-link">Live Demo</a>
-      <a href="#trust"     class="nav-link">Trust</a>
     </nav>
 
-    <a href="#contact" class="btn">
+    <a href="mailto:hello@estes.dev" class="btn">
       <span class="dot"></span>
       Contact
     </a>
@@ -511,7 +717,7 @@
         <h2 class="h2 mt-3">Drop a skill. Get a verdict.</h2>
       </div>
       <p class="lede max-w-sm">
-        Static, AST, and LLM passes return a single risk score in seconds. No install required.
+        Static and AST passes return a single risk score in seconds. No install required.
       </p>
     </div>
 
@@ -537,10 +743,14 @@
           </div>
 
           <div class="text-center">
-            <div class="or">— or —</div>
-            <div class="url-row">
+            <div class="url-or">— or paste a public repository —</div>
+            <div class="url-pill">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 14a5 5 0 0 1 0-7l3-3a5 5 0 0 1 7 7l-1.5 1.5"/>
+                <path d="M14 10a5 5 0 0 1 0 7l-3 3a5 5 0 0 1-7-7l1.5-1.5"/>
+              </svg>
               <input id="url" type="text" placeholder="https://github.com/owner/repo" />
-              <button type="button" id="scan-btn" class="btn btn-primary !h-[42px] !px-5">Scan</button>
+              <button type="button" id="scan-btn" class="btn btn-primary">Scan</button>
             </div>
           </div>
 
@@ -608,8 +818,6 @@
           <span>scan&nbsp;in&nbsp;<b id="ab-time">—</b></span>
           <span class="sep">·</span>
           <span><b id="ab-files">0</b>&nbsp;files</span>
-          <span class="sep">·</span>
-          <span id="ab-llm">LLM&nbsp;off</span>
         </div>
         <div class="flex items-center gap-2">
           <button id="btn-apply"    type="button" class="btn"><span class="dot"></span>Apply Wrapper</button>
@@ -647,13 +855,13 @@
           </div>
           <h3 class="text-white text-[19px] font-medium tracking-tight">Pre-Install Auditor</h3>
           <p class="mt-3 text-[14px] text-[color:var(--text-mute)] leading-relaxed">
-            Static + AST + LLM passes detect debug prints leaking env vars, semantic mismatches in
-            <span class="font-mono text-[12.5px] text-[color:var(--text)]">SKILL.md</span>, and unsafe credential reads.
+            Static regex and Python AST passes detect debug prints leaking env vars, hard-coded
+            credentials, wallet keys, and unsafe network or subprocess calls.
           </p>
           <ul class="mt-7 space-y-2.5 text-[13px] text-[color:var(--text-mute)]">
             <li class="flex gap-3"><span class="text-[color:var(--neon)]">›</span> Risk score 0 – 100, severity-tiered findings</li>
             <li class="flex gap-3"><span class="text-[color:var(--neon)]">›</span> Stub auto-patch with <span class="font-mono">estes: ignore</span></li>
-            <li class="flex gap-3"><span class="text-[color:var(--neon)]">›</span> JSON / SARIF export for audit trails</li>
+            <li class="flex gap-3"><span class="text-[color:var(--neon)]">›</span> JSON export for audit trails</li>
           </ul>
         </div>
       </article>
@@ -667,8 +875,8 @@
           </div>
           <h3 class="text-white text-[19px] font-medium tracking-tight">Real-Time Wrapper &amp; Redaction</h3>
           <p class="mt-3 text-[14px] text-[color:var(--text-mute)] leading-relaxed">
-            A FastAPI proxy intercepts every tool output before it reaches the LLM context window.
-            Secrets are redacted in-flight; warnings logged with optional human approval.
+            A FastAPI endpoint runs every tool output through the same regex ruleset as the auditor.
+            Matched secrets are replaced with <span class="font-mono text-[12.5px] text-[color:var(--text)]">[REDACTED by Estes]</span> before they reach your model context.
           </p>
           <ul class="mt-7 space-y-2.5 text-[13px] text-[color:var(--text-mute)]">
             <li class="flex gap-3"><span class="text-[color:var(--neon)]">›</span> Pattern + entropy + custom regex detectors</li>
@@ -722,7 +930,7 @@
             <span class="gauge-state is-danger"><span class="pip"></span>Leak</span>
           </div>
           <div class="text-white text-[15px] font-medium mb-3 font-mono">weather_tool / fetch.py</div>
-<pre class="code"><span class="dim"># tool output → captured by agent → LLM context</span>
+<pre class="code"><span class="dim"># tool output → captured by agent → model context</span>
 <span class="neon">def</span> get_weather(city):
     api_key = os.environ[<span class="dim">"OPENWEATHER_API_KEY"</span>]
     <span class="danger">print(f"DEBUG key={api_key}")</span>
@@ -760,49 +968,6 @@
   </div>
 </section>
 
-<!-- ====================  TRUST  ==================== -->
-<section id="trust" class="relative z-10 pb-32">
-  <div class="container-x">
-    <div class="card reveal">
-      <div class="card-pad py-10 px-8 md:px-12">
-        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10">
-          <div class="max-w-md">
-            <span class="eyebrow">— Trusted Methodology</span>
-            <h3 class="text-white text-[24px] font-medium tracking-tight mt-3">Built on standards security teams already speak.</h3>
-            <p class="lede mt-3 text-[14px]">
-              Findings map to recognised industry frameworks so AppSec, GRC, and platform teams adopt Estes without rewriting policy.
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <span class="badge"><span class="pip"></span> SANS Top 25</span>
-            <span class="badge"><span class="pip"></span> OWASP LLM</span>
-            <span class="badge"><span class="pip"></span> GIAC GSEC</span>
-            <span class="badge"><span class="pip"></span> OffSec OSCP</span>
-            <span class="badge"><span class="pip"></span> NIST AI RMF</span>
-            <span class="badge"><span class="pip"></span> ISO 42001</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ====================  CTA  ==================== -->
-<section id="contact" class="relative z-10 pb-28">
-  <div class="container-x text-center">
-    <span class="eyebrow reveal">— Ready when your skills aren't</span>
-    <h2 class="h2 mt-4 max-w-2xl mx-auto reveal" data-d="1">Run your first scan in under sixty seconds.</h2>
-    <div class="mt-9 flex flex-wrap items-center gap-3 justify-center reveal" data-d="2">
-      <a href="#scan" class="btn btn-primary">Start free audit
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-      <a href="mailto:hello@estes.dev" class="btn">
-        <span class="dot"></span> Talk to security
-      </a>
-    </div>
-  </div>
-</section>
-
 <!-- ====================  FOOTER  ==================== -->
 <footer class="relative z-10 pb-12">
   <div class="container-x">
@@ -820,12 +985,65 @@
         <a class="nav-link" href="#scan">Scan</a>
         <a class="nav-link" href="#features">Platform</a>
         <a class="nav-link" href="#demo">Live Demo</a>
-        <a class="nav-link" href="#trust">Governance</a>
-        <a class="nav-link" href="#contact">Contact</a>
+        <a class="nav-link" href="mailto:hello@estes.dev">Contact</a>
       </nav>
     </div>
   </div>
 </footer>
+
+<!-- ====================  WRAPPER MODAL  ==================== -->
+<div id="wrap-modal" class="modal-back" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wrap-title">
+    <div class="modal-head">
+      <div>
+        <h3 id="wrap-title">Apply Runtime Wrapper</h3>
+        <div class="sub">Live redaction · same engine as <span class="font-mono normal-case tracking-normal">wrapper.py /redact</span></div>
+      </div>
+      <button id="wrap-close" type="button" class="modal-close" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="text-[13px] text-[color:var(--text-mute)] leading-relaxed">
+        Paste any tool output, model context, or log line that this skill might emit at runtime.
+        Estes runs the same regex ruleset that powers the audit and returns a redacted version
+        you can safely forward to your model context window.
+      </p>
+
+      <div class="wrap-grid">
+        <div class="wrap-pane">
+          <header><span>Input</span><b id="wrap-in-stat">0 chars</b></header>
+          <textarea id="wrap-input" spellcheck="false" placeholder="DEBUG: connecting with AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
+PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"></textarea>
+        </div>
+        <div class="wrap-pane">
+          <header><span>Redacted output</span><b id="wrap-out-stat">awaiting run</b></header>
+          <pre id="wrap-output" aria-live="polite"><span class="text-[color:var(--text-dim)]">Run the wrapper to see redacted output here.</span></pre>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <div class="stat">
+          <span id="wrap-summary">Idle</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="wrap-load" type="button" class="btn">Load from scan</button>
+          <button id="wrap-clear" type="button" class="btn">Clear</button>
+          <button id="wrap-run" type="button" class="btn btn-primary">
+            <span class="dot"></span> Run wrapper
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-snippet">
+        <span class="c"># Wire your agent at it directly:</span><br/>
+        <span class="k">curl</span> -X POST http://localhost:5173/api/wrapper/redact \<br/>
+        &nbsp;&nbsp;-H <span class="k">'content-type: application/json'</span> \<br/>
+        &nbsp;&nbsp;-d <span class="k">'{"text": "&lt;your tool output&gt;"}'</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   /* ----------  Reveal on scroll  ---------- */
@@ -977,18 +1195,84 @@
 
     let CURRENT_SCAN = null;   // last payload returned from the API
     let SHOWING_ALL  = false;
+    let SCAN_TIMER   = null;
+    let SCAN_T0      = 0;
+
+    /**
+     * Toggle the "scan in progress" UI state across the input controls and
+     * the gauge. Called at the start and end (success or failure) of every
+     * scan so users can't fire two at once and always see what's happening.
+     */
+    function setScanning(on, label) {
+      const dropEl   = document.getElementById('drop');
+      const urlPill  = document.querySelector('.url-pill');
+      const urlInp   = document.getElementById('url');
+      const scanBtn  = document.getElementById('scan-btn');
+      const gauge    = document.getElementById('gauge');
+      const stateEl  = document.getElementById('gauge-state');
+      const stateLbl = document.getElementById('gauge-state-label');
+      const num      = document.getElementById('gauge-num');
+      const lbl      = document.getElementById('gauge-lbl');
+      const dropSub  = document.getElementById('drop-sub');
+
+      if (on) {
+        dropEl  && dropEl.classList.add('is-busy');
+        dropEl  && dropEl.setAttribute('aria-disabled', 'true');
+        urlPill && urlPill.classList.add('is-busy');
+        if (urlInp)  { urlInp.disabled  = true; }
+        if (scanBtn) {
+          scanBtn.disabled = true;
+          scanBtn.classList.add('is-busy');
+          scanBtn.dataset.label = scanBtn.dataset.label || scanBtn.textContent;
+          scanBtn.textContent = 'Scanning…';
+        }
+        gauge   && gauge.classList.add('is-scanning');
+        stateEl && stateEl.classList.remove('is-safe','is-warn','is-danger');
+        stateEl && stateEl.classList.add('is-scanning');
+        if (stateLbl) stateLbl.textContent = 'Scanning';
+        if (num)      num.textContent = '···';
+        if (lbl)      lbl.textContent = 'in progress';
+        if (label && dropSub) dropSub.textContent = label;
+
+        SCAN_T0 = performance.now();
+        clearInterval(SCAN_TIMER);
+        SCAN_TIMER = setInterval(() => {
+          if (!stateLbl) return;
+          const s = ((performance.now() - SCAN_T0) / 1000).toFixed(1);
+          stateLbl.textContent = `Scanning · ${s}s`;
+        }, 100);
+      } else {
+        clearInterval(SCAN_TIMER); SCAN_TIMER = null;
+        dropEl  && dropEl.classList.remove('is-busy');
+        dropEl  && dropEl.removeAttribute('aria-disabled');
+        urlPill && urlPill.classList.remove('is-busy');
+        if (urlInp)  { urlInp.disabled  = false; }
+        if (scanBtn) {
+          scanBtn.disabled = false;
+          scanBtn.classList.remove('is-busy');
+          if (scanBtn.dataset.label) {
+            scanBtn.textContent = scanBtn.dataset.label;
+          }
+        }
+        gauge   && gauge.classList.remove('is-scanning');
+        stateEl && stateEl.classList.remove('is-scanning');
+      }
+    }
 
     async function runScanFile(file) {
       flash('Uploading ' + file.name + '…');
       resetGauge(); hideFindings();
+      setScanning(true, 'Uploading ' + file.name + '…');
       const fd = new FormData();
       fd.append('file', file);
       try {
         const r = await fetch('/api/scan/file', { method: 'POST', body: fd });
         if (!r.ok) throw new Error(await r.text() || ('HTTP ' + r.status));
         const payload = await r.json();
+        setScanning(false);
         applyScanPayload(payload);
       } catch (e) {
+        setScanning(false);
         scanFailed(e);
       }
     }
@@ -996,6 +1280,7 @@
     async function runScanUrl(u) {
       flash('Scanning ' + u + '…');
       resetGauge(); hideFindings();
+      setScanning(true, null);
       try {
         const r = await fetch('/api/scan/url', {
           method: 'POST',
@@ -1004,8 +1289,10 @@
         });
         if (!r.ok) throw new Error(await r.text() || ('HTTP ' + r.status));
         const payload = await r.json();
+        setScanning(false);
         applyScanPayload(payload);
       } catch (e) {
+        setScanning(false);
         scanFailed(e);
       }
     }
@@ -1014,6 +1301,8 @@
       console.error('[estes] scan failed:', e);
       flash('Scan failed · ' + (e.message || 'unknown error'));
       resetGauge();
+      const dropSub = document.getElementById('drop-sub');
+      if (dropSub) dropSub.textContent = '.zip archive or single source file — up to 25 MB';
       // Surface a hint when the backend isn't running.
       if (String(e.message || '').includes('Failed to fetch')) {
         flash('Backend offline · run `uvicorn web.server:app --port 5173`');
@@ -1036,8 +1325,6 @@
       document.getElementById('ab-time').textContent =
         ((p.duration_ms || 0) / 1000).toFixed(1) + 's';
       document.getElementById('ab-files').textContent = p.files_scanned || 0;
-      document.getElementById('ab-llm').textContent =
-        p.llm_used ? ('LLM ' + (p.llm_provider || 'on')) : 'LLM off';
 
       // Download availability
       const dl = document.getElementById('btn-download');
@@ -1067,7 +1354,7 @@
     /* ----------  Render findings  ---------- */
     const SEV_LABEL = { critical: 'Critical', high: 'High', warning: 'Warn', info: 'Info' };
     const SEV_PILL  = { critical: 'sev-high', high: 'sev-high', warning: 'sev-warn', info: 'sev-info' };
-    const SRC_LABEL = { static: 'Static', ast: 'AST', llm: 'LLM' };
+    const SRC_LABEL = { static: 'Static', ast: 'AST' };
     const RANK      = { critical: 4, high: 3, warning: 2, info: 1 };
 
     function esc(s) {
@@ -1095,7 +1382,7 @@
           <article class="finding"><div class="body">
             <div class="lbl">All clear</div>
             <p class="why">No findings. The scanner ran <b>${CURRENT_SCAN.files_scanned || 0}</b>
-            file(s) through static, AST, and LLM passes and found nothing actionable.</p>
+            file(s) through the static and AST passes and found nothing actionable.</p>
           </div></article>`;
         footer.textContent = '0 findings';
         showAll.textContent = '';
@@ -1168,9 +1455,126 @@
       renderFindings();
     });
 
-    document.getElementById('btn-apply').addEventListener('click', () => {
-      flash('Wrapper instructions: `uvicorn wrapper:app --port 8000` then point your agent at it.');
+    /* ----------  Apply Wrapper modal  ---------- */
+    const wrapModal   = document.getElementById('wrap-modal');
+    const wrapInput   = document.getElementById('wrap-input');
+    const wrapOutput  = document.getElementById('wrap-output');
+    const wrapInStat  = document.getElementById('wrap-in-stat');
+    const wrapOutStat = document.getElementById('wrap-out-stat');
+    const wrapSummary = document.getElementById('wrap-summary');
+
+    function wrapOpen() {
+      wrapModal.classList.add('is-open');
+      wrapModal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => wrapInput.focus(), 60);
+    }
+    function wrapClose() {
+      wrapModal.classList.remove('is-open');
+      wrapModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('btn-apply').addEventListener('click', async () => {
+      wrapOpen();
+      if (!wrapInput.value && CURRENT_SCAN && CURRENT_SCAN.scan_id) {
+        try {
+          const r = await fetch(`/api/wrapper/sample/${encodeURIComponent(CURRENT_SCAN.scan_id)}`);
+          if (r.ok) {
+            const j = await r.json();
+            if (j.text && j.from_scan) {
+              wrapInput.value = j.text;
+              updateInStat();
+              wrapSummary.textContent = 'Prefilled from your scan · click Run wrapper';
+            }
+          }
+        } catch (_) { /* offline-tolerant */ }
+      }
     });
+
+    document.getElementById('wrap-close').addEventListener('click', wrapClose);
+    wrapModal.addEventListener('click', (e) => { if (e.target === wrapModal) wrapClose(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && wrapModal.classList.contains('is-open')) wrapClose();
+    });
+
+    function updateInStat() {
+      wrapInStat.textContent = `${wrapInput.value.length} chars`;
+    }
+    wrapInput.addEventListener('input', updateInStat);
+
+    document.getElementById('wrap-clear').addEventListener('click', () => {
+      wrapInput.value = '';
+      updateInStat();
+      wrapOutput.innerHTML = '<span class="text-[color:var(--text-dim)]">Run the wrapper to see redacted output here.</span>';
+      wrapOutStat.textContent = 'awaiting run';
+      wrapSummary.textContent = 'Idle';
+      wrapInput.focus();
+    });
+
+    document.getElementById('wrap-load').addEventListener('click', async () => {
+      if (!CURRENT_SCAN || !CURRENT_SCAN.scan_id) {
+        wrapSummary.textContent = 'No active scan to pull from';
+        return;
+      }
+      wrapSummary.textContent = 'Loading sample…';
+      try {
+        const r = await fetch(`/api/wrapper/sample/${encodeURIComponent(CURRENT_SCAN.scan_id)}`);
+        const j = await r.json();
+        if (j.text) {
+          wrapInput.value = j.text;
+          updateInStat();
+          wrapSummary.textContent = j.from_scan ? 'Loaded from your scan' : 'Sample loaded';
+        } else {
+          wrapSummary.textContent = 'Scan has no usable snippets';
+        }
+      } catch (e) {
+        wrapSummary.textContent = 'Could not load sample · ' + (e.message || 'error');
+      }
+    });
+
+    document.getElementById('wrap-run').addEventListener('click', async () => {
+      const text = wrapInput.value;
+      if (!text.trim()) {
+        wrapSummary.textContent = 'Paste something to redact first';
+        wrapInput.focus();
+        return;
+      }
+      wrapSummary.textContent = 'Running wrapper…';
+      wrapOutput.innerHTML = '<span class="text-[color:var(--text-dim)]">Redacting…</span>';
+      try {
+        const t0 = performance.now();
+        const r = await fetch('/api/wrapper/redact', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ text, scan_id: CURRENT_SCAN ? CURRENT_SCAN.scan_id : null }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        const ms = Math.max(1, Math.round(performance.now() - t0));
+        renderRedacted(j.output);
+        wrapOutStat.textContent = `${j.output_chars} chars`;
+        if (j.redactions > 0) {
+          wrapSummary.innerHTML =
+            `<b>${j.redactions}</b> secret${j.redactions === 1 ? '' : 's'} redacted · round-trip ${ms} ms`;
+        } else {
+          wrapSummary.innerHTML = `Clean — no patterns matched · round-trip ${ms} ms`;
+        }
+      } catch (e) {
+        wrapOutput.innerHTML =
+          '<span style="color:#ff7676">Wrapper call failed · ' + esc(e.message || 'unknown') + '</span>';
+        wrapSummary.textContent = 'Wrapper offline?';
+      }
+    });
+
+    function renderRedacted(out) {
+      const safe = esc(out);
+      const highlighted = safe.replace(
+        /\[REDACTED by Estes\]/g,
+        '<mark>[REDACTED by Estes]</mark>'
+      );
+      wrapOutput.innerHTML = highlighted || '<span class="text-[color:var(--text-dim)]">(empty)</span>';
+    }
     document.getElementById('btn-download').addEventListener('click', () => {
       if (!CURRENT_SCAN || !CURRENT_SCAN.can_download) {
         flash('Download is only available for uploaded files.');
@@ -1191,10 +1595,10 @@
       note.textContent = msg;
       note.style.cssText = `
         position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%);
-        background: #070d10; border: 1px solid rgba(0,255,157,0.4);
+        background: var(--ink-card); border: 1px solid rgba(77,139,255,0.4);
         color: #eaf3ee; font-family: 'JetBrains Mono'; font-size: 12px;
         padding: 10px 14px; border-radius: 999px; z-index: 50;
-        box-shadow: 0 0 24px rgba(0,255,157,0.25);
+        box-shadow: 0 0 24px rgba(77,139,255,0.25);
         opacity: 0; transition: opacity .35s ease;
       `;
       document.body.appendChild(note);
@@ -1212,7 +1616,7 @@
     const grd = g.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
     grd.addColorStop(0,    core);
     grd.addColorStop(0.35, glow);
-    grd.addColorStop(1,    'rgba(0,255,157,0)');
+    grd.addColorStop(1,    'rgba(77,139,255,0)');
     g.fillStyle = grd;
     g.fillRect(0, 0, size, size);
     return c;
@@ -1252,7 +1656,7 @@
       cv.style.height = window.innerHeight + 'px';
 
       spriteSize = Math.round(14 * dpr);
-      sprite = makeGlowSprite(spriteSize, 'rgba(220,255,235,0.95)', 'rgba(0,255,157,0.35)');
+      sprite = makeGlowSprite(spriteSize, 'rgba(220,235,255,0.95)', 'rgba(77,139,255,0.35)');
 
       const count = Math.floor((window.innerWidth * window.innerHeight) / 42000);
       parts = new Array(count).fill(0).map(() => ({
@@ -1299,7 +1703,7 @@
       h = cv.height = rect.height * dpr;
 
       spriteSize = Math.round(12 * dpr);
-      sprite = makeGlowSprite(spriteSize, 'rgba(210,255,225,0.95)', 'rgba(0,255,157,0.5)');
+      sprite = makeGlowSprite(spriteSize, 'rgba(210,225,255,0.95)', 'rgba(77,139,255,0.5)');
 
       const count = Math.max(20, Math.min(40, Math.floor(rect.width / 42)));
       nodes = new Array(count).fill(0).map(() => ({
@@ -1352,7 +1756,7 @@
           const dSq = dx*dx + dy*dy;
           if (dSq < linkSq) {
             const alpha = (1 - Math.sqrt(dSq) / linkPx) * 0.35;
-            ctx.strokeStyle = `rgba(0,255,157,${alpha})`;
+            ctx.strokeStyle = `rgba(77,139,255,${alpha})`;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);

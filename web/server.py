@@ -38,7 +38,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile  # noqa: E402
 from fastapi.responses import FileResponse, Response  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
-from auditor import Finding, ScanReport, scan_skill  # noqa: E402
+from auditor import Finding, ScanReport, redact_text, scan_skill  # noqa: E402
 
 WEB_DIR = Path(__file__).resolve().parent
 INDEX = WEB_DIR / "index.html"
@@ -102,8 +102,6 @@ def scan_to_payload(scan_id: str, label: str, report: ScanReport,
         "files_scanned": report.files_scanned,
         "bytes_scanned": report.bytes_scanned,
         "duration_ms": report.duration_ms,
-        "llm_used": report.llm_used,
-        "llm_provider": report.llm_provider,
         "warnings": list(report.warnings),
         "manifest": asdict(report.manifest),
         "counts": counts,
@@ -138,9 +136,65 @@ class UrlRequest(BaseModel):
     url: str
 
 
+class RedactRequest(BaseModel):
+    text: str
+    scan_id: str | None = None
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/api/wrapper/redact")
+def wrapper_redact(req: RedactRequest) -> dict[str, Any]:
+    """Run the runtime wrapper's redaction pipeline on raw text.
+
+    This is the same `redact_text` powering `wrapper.py /redact`, exposed
+    here so the dashboard can offer a live "Apply Wrapper" demo without
+    requiring a second process.
+    """
+    text = req.text or ""
+    redacted, count = redact_text(text)
+    return {
+        "input": text,
+        "output": redacted,
+        "redactions": count,
+        "input_chars": len(text),
+        "output_chars": len(redacted),
+    }
+
+
+@app.get("/api/wrapper/sample/{scan_id}")
+def wrapper_sample(scan_id: str) -> dict[str, Any]:
+    """Return a representative chunk of risky text from a prior scan, so
+    the wrapper modal can prefill with the user's own findings instead of
+    a synthetic sample.
+    """
+    _gc()
+    ent = _STORE.get(scan_id)
+    if not ent:
+        raise HTTPException(404, "unknown or expired scan_id")
+    report: ScanReport = ent["report"]
+
+    sev_rank = {"critical": 0, "high": 1, "warning": 2, "info": 3}
+    picks = sorted(
+        (f for f in report.findings if f.snippet),
+        key=lambda f: (sev_rank.get(f.severity, 4), -len(f.snippet or "")),
+    )[:6]
+
+    if not picks:
+        return {"text": "", "from_scan": False}
+
+    lines = []
+    for f in picks:
+        loc = f.file or "<input>"
+        if f.line:
+            loc += f":{f.line}"
+        lines.append(f"# {loc}  ({f.severity})")
+        lines.append(f.snippet.strip())
+        lines.append("")
+    return {"text": "\n".join(lines).rstrip() + "\n", "from_scan": True}
 
 
 @app.get("/")
@@ -163,7 +217,7 @@ async def scan_file(file: UploadFile = File(...)) -> dict[str, Any]:
     target.write_bytes(await file.read())
 
     try:
-        report = scan_skill(target, llm=True)
+        report = scan_skill(target, llm=False)
     except Exception as exc:  # noqa: BLE001
         shutil.rmtree(root, ignore_errors=True)
         raise HTTPException(500, f"scan failed: {exc.__class__.__name__}: {exc}")
@@ -183,7 +237,7 @@ def scan_url(req: UrlRequest) -> dict[str, Any]:
 
     scan_id = uuid.uuid4().hex
     try:
-        report = scan_skill(req.url.strip(), llm=True)
+        report = scan_skill(req.url.strip(), llm=False)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(500, f"scan failed: {exc.__class__.__name__}: {exc}")
 
@@ -195,13 +249,186 @@ def scan_url(req: UrlRequest) -> dict[str, Any]:
     return scan_to_payload(scan_id, req.url, report, can_download=False)
 
 
+# ---------------------------------------------------------------------------
+# Patch builder — applies real safety transformations, not just suppression.
+# ---------------------------------------------------------------------------
+
+# Categories that cannot be safely "redacted in place" (the dangerous thing
+# is the *action itself*, not a literal secret string). For these we comment
+# out the entire line.
+_BLOCK_CATEGORIES = {
+    "wallet_action",          # eth_sendRawTransaction, .sendSignedTransaction(...
+    "network_call",           # off-allowlist outbound traffic
+    "unsafe_subprocess",
+}
+
+
+def _comment_prefix(suffix: str) -> str:
+    """Pick the right line-comment syntax for the file extension."""
+    if suffix in {".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".go",
+                  ".java", ".c", ".cpp", ".h", ".rs", ".swift", ".kt"}:
+        return "//"
+    return "#"
+
+
+def _statement_span(lines: list[str], start_idx: int) -> int:
+    """Return the inclusive end index of the statement starting at start_idx,
+    extending forward across multi-line constructs by counting bracket depth.
+
+    Heuristic — not full lexer: ignores brackets inside strings if they're on
+    the same line (we strip simple string literals before counting). Good
+    enough for the realistic shape of skill source: function calls, dict
+    literals, etc.
+    """
+    import re as _re
+    _STRIP_STRINGS = _re.compile(
+        r'"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\''
+    )
+    depth = 0
+    end_idx = start_idx
+    for i in range(start_idx, len(lines)):
+        stripped = _STRIP_STRINGS.sub("", lines[i])
+        for ch in stripped:
+            if ch in "([{":
+                depth += 1
+            elif ch in ")]}":
+                depth -= 1
+        end_idx = i
+        # Backslash-continuation also extends the statement.
+        cont = lines[i].rstrip("\n").endswith("\\")
+        if depth <= 0 and not cont:
+            break
+    return end_idx
+
+
+def _patch_lines(
+    lines: list[str],
+    findings_by_line: dict[int, list[Finding]],
+    suffix: str,
+) -> tuple[list[str], list[tuple[int, list[str]]]]:
+    """Walk the file once and apply per-line safety fixes.
+
+    Returns the new line list and a [(line_no, [change_descriptions])] log.
+    Block-strategy fixes consume contiguous statement spans (so multi-line
+    `requests.get(\n  ...\n)` calls don't leave orphan lines).
+    """
+    cmt = _comment_prefix(suffix)
+    out: list[str] = []
+    log: list[tuple[int, list[str]]] = []
+
+    consumed_until = -1   # inclusive index of the last block-consumed line
+    i = 0
+    while i < len(lines):
+        ln = i + 1
+        on_line = findings_by_line.get(ln, [])
+        already_marked = "estes:" in lines[i]
+
+        if i <= consumed_until or already_marked or not on_line:
+            out.append(lines[i])
+            i += 1
+            continue
+
+        block_fs = [
+            f for f in on_line
+            if f.source == "ast" or f.category in _BLOCK_CATEGORIES
+        ]
+        redact_fs = [f for f in on_line if f not in block_fs]
+
+        if block_fs:
+            end_idx = _statement_span(lines, i)
+            indent_src = lines[i].rstrip("\n")
+            indent = indent_src[: len(indent_src) - len(indent_src.lstrip())]
+            ids = ",".join(sorted({f.id for f in block_fs}))
+            cats = ",".join(sorted({f.category for f in block_fs}))
+            out.append(
+                f"{indent}{cmt} estes: blocked unsafe code [{ids}] "
+                f"({cats}) — see ESTES_PATCH.md\n"
+            )
+            for k in range(i, end_idx + 1):
+                raw = lines[k].rstrip("\n")
+                # Preserve original indentation visually inside the comment.
+                out.append(f"{indent}{cmt} {raw[len(indent):] if raw.startswith(indent) else raw.lstrip()}\n")
+            log.append((ln, [f"blocked [{ids}] ({cats}) "
+                              f"— commented {end_idx - i + 1} line(s)"]))
+            consumed_until = end_idx
+            i = end_idx + 1
+            continue
+
+        if redact_fs:
+            raw = lines[i].rstrip("\n")
+            redacted, n = redact_text(raw)
+            ids = ",".join(sorted({f.id for f in redact_fs}))
+            nl = "\n" if lines[i].endswith("\n") else ""
+            if n > 0 and redacted != raw:
+                tail = f"  {cmt} estes: secret literal redacted [{ids}] — rotate the original"
+                out.append(redacted + tail + nl)
+                log.append((ln, [f"redacted [{ids}]"]))
+            else:
+                tail = f"  {cmt} estes: review [{ids}]"
+                out.append(raw + tail + nl)
+                log.append((ln, [f"flagged [{ids}] — manual review"]))
+            i += 1
+            continue
+
+        out.append(lines[i])
+        i += 1
+
+    return out, log
+
+
+def _build_patch_sheet(report: ScanReport,
+                       per_file: dict[str, list[tuple[int, list[str]]]]) -> str:
+    out = [
+        "# Estes — fixed bundle",
+        "",
+        f"- **Source:**   `{report.source}`",
+        f"- **Severity:** {report.severity}  ·  **Score:** {report.risk_score}/100",
+        f"- **Findings:** {len(report.findings)}",
+        "",
+        "## What was changed",
+        "",
+        "Estes applies safety transformations directly to the source so the "
+        "downloaded bundle is materially safer than the input:",
+        "",
+        "| Strategy | When it fires | Effect |",
+        "|---|---|---|",
+        "| **Redact literal** | A regex pass found a secret string baked into source | The literal is replaced with `[REDACTED by Estes]` and a `# estes: secret literal redacted` marker is appended |",
+        "| **Block call** | An AST taint flow, wallet broadcast, or off-allowlist network call was detected | The offending line is commented out with a `# estes: blocked unsafe code` marker; the original is preserved as a comment for review |",
+        "| **Review** | A finding fired that the auto-patcher can't safely transform on its own | A `# estes: review` marker is appended so the line shows up in code review |",
+        "",
+        "## Per-file change log",
+        "",
+    ]
+    if not per_file:
+        out.append("_No transformations were applied (no actionable findings)._\n")
+    else:
+        for fname in sorted(per_file):
+            out.append(f"### `{fname}`")
+            for ln, entries in sorted(per_file[fname]):
+                for entry in entries:
+                    out.append(f"- line {ln}: {entry}")
+            out.append("")
+    out.extend([
+        "## Important — what this bundle does NOT do",
+        "",
+        "1. **Rotate credentials for you.** Every secret that was redacted in source "
+        "is still valid wherever it was originally provisioned (AWS, OpenAI, your "
+        "wallet, etc.). Treat all redacted secrets as compromised and revoke them now.",
+        "2. **Guarantee runtime safety.** Blocked calls remove a known leak path, but "
+        "the surrounding logic may still need refactoring. Review every `estes: blocked` "
+        "marker in this bundle before redistributing.",
+        "3. **Replace human review.** This is a deterministic patch produced by rule "
+        "matching. Treat it as a starting point, not a sign-off.",
+        "",
+    ])
+    return "\n".join(out)
+
+
 @app.get("/api/download/{scan_id}")
 def download(scan_id: str) -> Response:
-    """Stub auto-patch: zip up the original tree with `# estes: ignore`
-    appended to every flagged line, plus a manifest.
-
-    This intentionally mirrors `app._build_fixed_zip` so behaviour stays
-    consistent between the Streamlit UI and this web frontend.
+    """Build a zip where every flagged line has had a concrete safety fix
+    applied — secrets redacted in place, unsafe calls commented out — plus
+    an ESTES_PATCH.md change log explaining each transformation.
     """
     _gc()
     ent = _STORE.get(scan_id)
@@ -212,19 +439,11 @@ def download(scan_id: str) -> Response:
     if root is None or not root.exists():
         raise HTTPException(409, "download not available for URL scans")
 
-    findings_by_file: dict[str, set[int]] = {}
+    # Group findings by file → line → list[Finding]
+    by_file: dict[str, dict[int, list[Finding]]] = {}
     for f in report.findings:
         if f.file and f.line:
-            findings_by_file.setdefault(f.file, set()).add(f.line)
-
-    def _comment_for(path: str) -> str:
-        suffix = Path(path).suffix.lower()
-        if suffix in {".py", ".sh", ".rb", ".yaml", ".yml", ".toml", ".env", ".ini"}:
-            return "  # estes: ignore"
-        if suffix in {".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".go",
-                      ".java", ".c", ".cpp", ".h"}:
-            return "  // estes: ignore"
-        return "  # estes: ignore"
+            by_file.setdefault(f.file, {}).setdefault(f.line, []).append(f)
 
     # Determine the source root (extracted .zip vs raw single file vs dir).
     zips = list(root.glob("*.zip"))
@@ -237,6 +456,9 @@ def download(scan_id: str) -> Response:
     else:
         src_root = root
 
+    # Per-file change log captured during patching (used by ESTES_PATCH.md).
+    change_log: dict[str, list[tuple[int, list[str]]]] = {}
+
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in src_root.rglob("*"):
@@ -248,33 +470,23 @@ def download(scan_id: str) -> Response:
             except (OSError, UnicodeDecodeError):
                 zf.write(path, arcname=rel)
                 continue
-            lines = text.splitlines(keepends=True)
-            hot = findings_by_file.get(rel, set())
-            for ln in hot:
-                idx = ln - 1
-                if 0 <= idx < len(lines):
-                    line = lines[idx].rstrip("\n")
-                    if "estes: ignore" not in line:
-                        lines[idx] = line + _comment_for(rel) + "\n"
-            zf.writestr(rel, "".join(lines))
 
-        sheet = (
-            "# Estes patch sheet\n\n"
-            f"Source:   {report.source}\n"
-            f"Severity: {report.severity}  Score: {report.risk_score}\n"
-            f"Findings: {len(report.findings)}\n\n"
-            "## Lines marked with `estes: ignore`\n\n"
-        )
-        for fname, lns in sorted(findings_by_file.items()):
-            sheet += f"- {fname}: {sorted(lns)}\n"
-        sheet += (
-            "\n> **Stub patch — review before redistributing.** This silences "
-            "findings, it does not fix the underlying leak.\n"
-        )
-        zf.writestr("ESTES_PATCH.md", sheet)
+            findings_for_file = by_file.get(rel, {})
+            if not findings_for_file:
+                zf.writestr(rel, text)
+                continue
+
+            suffix = path.suffix.lower()
+            lines = text.splitlines(keepends=True)
+            new_lines, file_changes = _patch_lines(lines, findings_for_file, suffix)
+            if file_changes:
+                change_log[rel] = file_changes
+            zf.writestr(rel, "".join(new_lines))
+
+        zf.writestr("ESTES_PATCH.md", _build_patch_sheet(report, change_log))
 
     return Response(
         content=buf.getvalue(),
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="skill_fixed.zip"'},
+        headers={"Content-Disposition": 'attachment; filename="skill_fixed.zip"'},
     )

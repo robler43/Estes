@@ -48,8 +48,6 @@ calls into `auditor.scan_skill(...)` and renders the real findings.
   "files_scanned": 2,
   "bytes_scanned": 1234,
   "duration_ms":  4131,
-  "llm_used":     true,
-  "llm_provider": "gemini",        // or "" if unused
   "warnings":     [],
   "manifest":     { "name": "...", "description": "..." },
   "counts":       { "critical": 0, "high": 8, "warning": 2, "info": 0 },
@@ -59,7 +57,7 @@ calls into `auditor.scan_skill(...)` and renders the real findings.
     {
       "id":       "ES-PRINT-CRED-01",
       "severity": "high",          // "critical" | "high" | "warning" | "info"
-      "source":   "static",        // "static" | "ast" | "llm"
+      "source":   "static",        // "static" | "ast"
       "category": "credential",
       "file":     "weather_tool/weather.py",
       "line":     23,

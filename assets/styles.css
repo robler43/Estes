@@ -261,6 +261,87 @@ div[data-testid="stDownloadButton"] > button:hover:not(:disabled) {
   margin-left: 2px;
 }
 
+/* ---------- Finding card sections (What/Why/How) ----------------------- */
+
+/* A labeled section inside an expanded finding card. Three variants —
+ * "bad" (red, "What was wrong"), "why" (amber, "Why it matters"),
+ * "good" (green, "What to change") — share the same structure. */
+.es-section {
+  margin: 0 0 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.18);
+}
+.es-section__head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.es-section__icon {
+  font-size: 14px; line-height: 1;
+  width: 18px; text-align: center;
+}
+.es-section__label { color: inherit; }
+.es-section__body { padding: 12px 14px; }
+
+.es-section__head--bad {
+  color: var(--danger);
+  background: rgba(255, 77, 109, 0.08);
+  border-bottom-color: rgba(255, 77, 109, 0.25);
+}
+.es-section__head--why {
+  color: var(--warn);
+  background: rgba(255, 180, 84, 0.08);
+  border-bottom-color: rgba(255, 180, 84, 0.25);
+}
+.es-section__head--good {
+  color: var(--accent);
+  background: rgba(34, 255, 136, 0.08);
+  border-bottom-color: rgba(34, 255, 136, 0.25);
+}
+
+/* Diff-style code blocks for BEFORE / AFTER snippets. Mirror GitHub's
+ * unified diff: red gutter & wash for the offending line, green gutter
+ * & wash for the recommended pattern. */
+.es-diff-cap {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  margin: 0 0 4px 0;
+}
+.es-diff {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 0 0 6px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+  border-left-width: 3px; border-left-style: solid;
+}
+.es-diff__sigil {
+  font-weight: 700;
+  flex-shrink: 0;
+  user-select: none;
+  width: 12px; text-align: center;
+}
+.es-diff--before {
+  background: rgba(255, 77, 109, 0.10);
+  border-left-color: var(--danger);
+  color: #ffd4dc;
+}
+.es-diff--before .es-diff__sigil { color: var(--danger); }
+.es-diff--after {
+  background: rgba(34, 255, 136, 0.10);
+  border-left-color: var(--accent);
+  color: #c8ffe2;
+}
+.es-diff--after .es-diff__sigil { color: var(--accent); }
+
 /* ---------- "Found by" summary strip (above the findings list) --------- */
 
 .es-src-summary {
