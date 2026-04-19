@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SkillBouncer — Agentic AI Security</title>
+
+  <!-- Tailwind via Play CDN — perfect for a static design mockup -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+
+  <!-- Inter (UI) + JetBrains Mono (code) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <script>
+    // Custom palette + utilities. Mobile Legends "Estes" hero vibe:
+    // deep mystic indigo/violet base, holy emerald + neon cyan accents.
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui"],
+            mono: ["JetBrains Mono", "ui-monospace", "Menlo"],
+          },
+          colors: {
+            ink: {
+              950: "#06061a",   // deepest void
+              900: "#0a0c24",   // page bg
+              800: "#11132e",   // card bg
+              700: "#181b3d",   // elevated
+              600: "#22264f",   // hover
+              500: "#2d3168",   // borders
+            },
+            mist: {
+              100: "#e7ecff",   // primary text
+              200: "#c2cbf0",   // secondary text
+              300: "#8a93c4",   // tertiary
+              400: "#5b6298",   // muted / metadata
+            },
+            neon: {
+              cyan: "#22e5ff",
+              emerald: "#22ff9d",
+              violet: "#9b6bff",
+              amber: "#ffc857",
+              rose: "#ff4d7e",
+            },
+          },
+          boxShadow: {
+            "glow-emerald": "0 0 24px rgba(34,255,157,0.35), 0 0 48px rgba(34,255,157,0.15)",
+            "glow-cyan":    "0 0 24px rgba(34,229,255,0.35), 0 0 48px rgba(34,229,255,0.15)",
+            "glow-rose":    "0 0 24px rgba(255,77,126,0.35), 0 0 48px rgba(255,77,126,0.15)",
+            "glow-amber":   "0 0 24px rgba(255,200,87,0.35), 0 0 48px rgba(255,200,87,0.15)",
+            "glow-violet":  "0 0 24px rgba(155,107,255,0.35), 0 0 48px rgba(155,107,255,0.15)",
+            "card":         "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.35)",
+          },
+          animation: {
+            "pulse-soft": "pulseSoft 3.2s ease-in-out infinite",
+            "drift":      "drift 14s ease-in-out infinite",
+            "scan":       "scan 2.4s linear infinite",
+          },
+          keyframes: {
+            pulseSoft: {
+              "0%,100%": { opacity: "0.55" },
+              "50%":     { opacity: "1"    },
+            },
+            drift: {
+              "0%,100%": { transform: "translate3d(0,0,0)" },
+              "50%":     { transform: "translate3d(0,-12px,0)" },
+            },
+            scan: {
+              "0%":   { transform: "translateY(-100%)" },
+              "100%": { transform: "translateY(100%)"  },
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Page-level cosmetics that are easier as raw CSS than Tailwind utilities. */
+    :root { color-scheme: dark; }
+    html, body { background: #06061a; }
+
+    /* Subtle starfield + radial nebula */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(900px 600px at 12% -10%, rgba(155,107,255,0.18), transparent 60%),
+        radial-gradient(900px 600px at 90% 0%,   rgba(34,229,255,0.12),  transparent 65%),
+        radial-gradient(700px 500px at 50% 110%, rgba(34,255,157,0.10),  transparent 65%),
+        repeating-linear-gradient(
+          0deg, transparent 0 2px, rgba(255,255,255,0.012) 2px 3px
+        );
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 23% 17%,  rgba(255,255,255,0.55), transparent 60%),
+        radial-gradient(1px 1px at 71% 41%,  rgba(255,255,255,0.45), transparent 60%),
+        radial-gradient(1px 1px at 41% 88%,  rgba(255,255,255,0.45), transparent 60%),
+        radial-gradient(1px 1px at 86% 73%,  rgba(255,255,255,0.40), transparent 60%),
+        radial-gradient(1.4px 1.4px at 12% 60%, rgba(155,107,255,0.55), transparent 60%),
+        radial-gradient(1.4px 1.4px at 60% 18%, rgba(34,229,255,0.55), transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* Glassy panel */
+    .glass {
+      background:
+        linear-gradient(180deg, rgba(34, 38, 79, 0.45), rgba(17, 19, 46, 0.65));
+      backdrop-filter: blur(8px) saturate(120%);
+      -webkit-backdrop-filter: blur(8px) saturate(120%);
+    }
+
+    /* Animated rune-glow ring used on the drop zone hover state */
+    .rune-ring {
+      position: relative;
+      isolation: isolate;
+    }
+    .rune-ring::before {
+      content: "";
+      position: absolute; inset: -1px; border-radius: inherit;
+      padding: 1px;
+      background: conic-gradient(
+        from 0deg,
+        rgba(34,255,157,0.0) 0deg,
+        rgba(34,255,157,0.85) 90deg,
+        rgba(34,229,255,0.85) 180deg,
+        rgba(155,107,255,0.85) 270deg,
+        rgba(34,255,157,0.0) 360deg
+      );
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      animation: spin 6s linear infinite;
+      opacity: 0.0;
+      transition: opacity 240ms ease;
+      z-index: -1;
+    }
+    .rune-ring:hover::before { opacity: 1.0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* "Scan line" sliding inside the drop zone — cyber HUD touch */
+    .scanline {
+      position: absolute; left: 0; right: 0; height: 28%;
+      background: linear-gradient(
+        180deg,
+        transparent,
+        rgba(34, 255, 157, 0.10) 50%,
+        transparent
+      );
+      filter: blur(2px);
+      pointer-events: none;
+    }
+
+    /* Severity chip helpers */
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .chip-dot {
+      width: 6px; height: 6px; border-radius: 999px;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    /* Code block — a hint of HUD framing */
+    .codeblock {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #d6dcff;
+      background:
+        linear-gradient(180deg, rgba(8, 10, 30, 0.85), rgba(10, 12, 36, 0.85));
+      border: 1px solid rgba(45, 49, 104, 0.7);
+      border-radius: 12px;
+      padding: 14px 16px;
+      overflow: auto;
+    }
+    .codeblock .ln { color: #4b5394; user-select: none; padding-right: 14px; }
+    .codeblock .leak { background: rgba(255,77,126,0.18); border-radius: 4px; padding: 0 4px; }
+    .codeblock .ok   { background: rgba(34,255,157,0.18); border-radius: 4px; padding: 0 4px; color: #b6ffd9; }
+    .codeblock .com  { color: #6a73ad; font-style: italic; }
+  </style>
+</head>
+
+<body class="font-sans text-mist-100 antialiased selection:bg-neon-emerald/30 selection:text-white">
+  <div class="relative z-10 min-h-screen">
+
+    <!-- ================= HEADER ================= -->
+    <header class="sticky top-0 z-30 border-b border-ink-500/60 backdrop-blur-md bg-ink-900/70">
+      <div class="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
+        <a href="#" class="flex items-center gap-3 group">
+          <!-- Shield + circuit logo -->
+          <span class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-emerald/20 to-neon-cyan/20 border border-neon-emerald/40 shadow-glow-emerald">
+            <svg viewBox="0 0 32 32" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:#22ff9d">
+              <path d="M16 3 L27 7 V16 C27 22 22.2 27 16 29 C9.8 27 5 22 5 16 V7 Z"/>
+              <path d="M11 15 L15 19 L22 12"/>
+            </svg>
+            <span class="absolute -inset-px rounded-xl ring-1 ring-neon-emerald/30 animate-pulse-soft"></span>
+          </span>
+          <div class="leading-tight">
+            <div class="text-[15px] font-semibold tracking-wide">
+              <span class="text-mist-100">SkillBouncer</span>
+              <span class="text-mist-400 mx-1.5">|</span>
+              <span class="bg-gradient-to-r from-neon-emerald to-neon-cyan bg-clip-text text-transparent">
+                Agentic AI Security
+              </span>
+            </div>
+            <div class="text-[11px] text-mist-400 tracking-[0.18em] uppercase">
+              Pre-flight + Runtime guardrails
+            </div>
+          </div>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-1 text-[13px] text-mist-200">
+          <a class="px-3 py-2 rounded-lg hover:bg-ink-700/70 hover:text-mist-100 transition" href="#scan">Scan</a>
+          <a class="px-3 py-2 rounded-lg hover:bg-ink-700/70 hover:text-mist-100 transition" href="#findings">Findings</a>
+          <a class="px-3 py-2 rounded-lg hover:bg-ink-700/70 hover:text-mist-100 transition" href="#demo">Live Demo</a>
+          <a class="px-3 py-2 rounded-lg hover:bg-ink-700/70 hover:text-mist-100 transition" href="#docs">Docs</a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+          <span class="hidden sm:inline-flex items-center gap-2 rounded-full border border-neon-emerald/30 bg-neon-emerald/5 px-3 py-1 text-[11px] font-semibold text-neon-emerald shadow-glow-emerald">
+            <span class="h-1.5 w-1.5 rounded-full bg-neon-emerald animate-pulse-soft"></span>
+            Wrapper online
+          </span>
+          <button class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-neon-emerald to-neon-cyan px-4 py-2 text-sm font-semibold text-ink-950 shadow-glow-emerald hover:brightness-110 transition">
+            Connect Agent
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-6 pb-24">
+
+      <!-- ================= HERO / DROP ZONE ================= -->
+      <section id="scan" class="pt-12">
+        <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 items-stretch">
+
+          <!-- Left: tagline + drop zone -->
+          <div class="space-y-6">
+            <div>
+              <div class="inline-flex items-center gap-2 rounded-full border border-neon-violet/40 bg-neon-violet/5 px-3 py-1 text-[11px] font-semibold tracking-widest uppercase text-neon-violet">
+                <span class="h-1.5 w-1.5 rounded-full bg-neon-violet animate-pulse-soft"></span>
+                Agentic AI · 2026
+              </div>
+              <h1 class="mt-4 text-[44px] leading-[1.05] font-bold tracking-tight">
+                The bouncer for your
+                <span class="bg-gradient-to-r from-neon-emerald via-neon-cyan to-neon-violet bg-clip-text text-transparent">
+                  third-party AI skills
+                </span>.
+              </h1>
+              <p class="mt-3 max-w-xl text-mist-200 text-[15px] leading-relaxed">
+                Drop a skill, paste a GitHub URL, or stream tool output through the runtime
+                wrapper. SkillBouncer flags leaked API keys, wallet seeds, signing code,
+                and silent network calls before they ever touch your model context.
+              </p>
+            </div>
+
+            <!-- Drop zone -->
+            <div class="rune-ring rounded-2xl">
+              <label
+                for="dropfile"
+                class="group block cursor-pointer rounded-2xl border border-dashed border-neon-emerald/40 bg-ink-800/60 p-8 transition hover:border-neon-emerald hover:bg-ink-700/60"
+              >
+                <div class="relative overflow-hidden rounded-xl">
+                  <div class="scanline animate-scan"></div>
+                  <div class="flex flex-col items-center text-center py-6">
+                    <span class="inline-flex h-14 w-14 items-center justify-center rounded-full bg-neon-emerald/10 border border-neon-emerald/40 shadow-glow-emerald mb-4 group-hover:scale-110 transition">
+                      <svg viewBox="0 0 24 24" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#22ff9d">
+                        <path d="M12 16V4"/>
+                        <path d="M7 9l5-5 5 5"/>
+                        <rect x="3" y="16" width="18" height="5" rx="2"/>
+                      </svg>
+                    </span>
+                    <div class="text-[15px] font-semibold text-mist-100">
+                      Drop a third-party skill (.zip) or single source file
+                    </div>
+                    <div class="mt-1 text-[12.5px] text-mist-300">
+                      Supports <span class="font-mono text-neon-cyan">.py</span>,
+                      <span class="font-mono text-neon-cyan">.js</span>,
+                      <span class="font-mono text-neon-cyan">.ts</span>,
+                      <span class="font-mono text-neon-cyan">.sol</span>,
+                      <span class="font-mono text-neon-cyan">.zip</span>
+                      &nbsp;·&nbsp; max 5 MB
+                    </div>
+                    <input id="dropfile" type="file" class="hidden" />
+                    <button class="mt-5 inline-flex items-center gap-2 rounded-lg bg-neon-emerald/15 border border-neon-emerald/50 px-4 py-2 text-sm font-semibold text-neon-emerald hover:bg-neon-emerald/25 hover:shadow-glow-emerald transition">
+                      Select file
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Or GitHub URL -->
+                <div class="mt-6 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-ink-500/80 bg-ink-900/70 px-3 py-2 focus-within:border-neon-cyan focus-within:shadow-glow-cyan transition">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5 text-mist-300" fill="currentColor">
+                    <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.89-.39.98 0 1.97.13 2.89.39 2.21-1.49 3.18-1.18 3.18-1.18.62 1.58.23 2.75.11 3.04.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.41-5.27 5.69.41.35.78 1.03.78 2.08v3.08c0 .3.21.66.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="or paste a public GitHub URL  →  https://github.com/owner/repo"
+                    class="bg-transparent border-0 focus:ring-0 text-[14px] text-mist-100 placeholder:text-mist-400 font-mono"
+                  />
+                  <button class="rounded-md bg-ink-700 hover:bg-ink-600 px-3 py-1.5 text-[12px] font-semibold text-mist-100 transition">
+                    Fetch
+                  </button>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-[12px] text-mist-400">
+                    <span class="inline-flex h-1.5 w-1.5 rounded-full bg-neon-cyan animate-pulse-soft"></span>
+                    Static + AST + Gemini deep pass
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-neon-emerald to-neon-cyan px-5 py-2.5 text-[13px] font-bold text-ink-950 tracking-wide shadow-glow-emerald hover:brightness-110 transition"
+                  >
+                    Scan Skill
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 12h14"/><path d="M13 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                </div>
+              </label>
+            </div>
+
+            <!-- Quick stats / detection categories -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="rounded-xl border border-ink-500/70 bg-ink-800/60 p-3">
+                <div class="text-[11px] tracking-widest text-mist-400 uppercase">Wallet</div>
+                <div class="mt-1 text-lg font-semibold text-neon-rose">12 rules</div>
+              </div>
+              <div class="rounded-xl border border-ink-500/70 bg-ink-800/60 p-3">
+                <div class="text-[11px] tracking-widest text-mist-400 uppercase">Cloud</div>
+                <div class="mt-1 text-lg font-semibold text-neon-amber">8 rules</div>
+              </div>
+              <div class="rounded-xl border border-ink-500/70 bg-ink-800/60 p-3">
+                <div class="text-[11px] tracking-widest text-mist-400 uppercase">Vendor tokens</div>
+                <div class="mt-1 text-lg font-semibold text-neon-cyan">10 rules</div>
+              </div>
+              <div class="rounded-xl border border-ink-500/70 bg-ink-800/60 p-3">
+                <div class="text-[11px] tracking-widest text-mist-400 uppercase">Wallet RPCs</div>
+                <div class="mt-1 text-lg font-semibold text-neon-violet">14 hosts</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: risk score panel -->
+          <aside class="glass rounded-2xl border border-ink-500/70 shadow-card p-6 flex flex-col">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-[11px] uppercase tracking-[0.2em] text-mist-400">
+                  Last scan
+                </div>
+                <div class="mt-0.5 text-[14px] font-semibold text-mist-100">
+                  weather_tool.zip
+                </div>
+                <div class="text-[12px] text-mist-400 font-mono">
+                  github.com/demo/weather-tool · 4 files · 1.2&thinsp;s
+                </div>
+              </div>
+              <span class="chip text-neon-rose border-neon-rose/50 bg-neon-rose/10 shadow-glow-rose">
+                <span class="chip-dot bg-neon-rose"></span>Critical
+              </span>
+            </div>
+
+            <!-- Circular gauge -->
+            <div class="mt-6 mx-auto relative h-56 w-56">
+              <svg viewBox="0 0 200 200" class="h-full w-full -rotate-90">
+                <defs>
+                  <linearGradient id="riskGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%"  stop-color="#ff4d7e"/>
+                    <stop offset="55%" stop-color="#ff8a3d"/>
+                    <stop offset="100%" stop-color="#ffc857"/>
+                  </linearGradient>
+                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                    <feMerge>
+                      <feMergeNode in="blur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <!-- Track -->
+                <circle cx="100" cy="100" r="86" stroke="rgba(45,49,104,0.6)" stroke-width="14" fill="none"/>
+                <!-- Progress: stroke-dasharray based on score 92 / 100 -->
+                <circle
+                  cx="100" cy="100" r="86" fill="none"
+                  stroke="url(#riskGrad)" stroke-width="14" stroke-linecap="round"
+                  stroke-dasharray="540" stroke-dashoffset="43"
+                  filter="url(#glow)"
+                />
+                <!-- Tick marks -->
+                <g stroke="rgba(199,206,255,0.18)" stroke-width="1">
+                  <line x1="100" y1="6"  x2="100" y2="14"/>
+                  <line x1="194" y1="100" x2="186" y2="100"/>
+                  <line x1="100" y1="194" x2="100" y2="186"/>
+                  <line x1="6" y1="100"  x2="14" y2="100"/>
+                </g>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <div class="text-[12px] uppercase tracking-[0.25em] text-mist-400">Risk Score</div>
+                <div class="text-[64px] leading-none font-bold text-neon-rose drop-shadow-[0_0_18px_rgba(255,77,126,0.55)]">
+                  92
+                </div>
+                <div class="text-[12px] text-mist-300 font-mono">/ 100</div>
+              </div>
+            </div>
+
+            <!-- Score band legend -->
+            <div class="mt-5 grid grid-cols-4 gap-1.5 text-[10px] font-semibold tracking-widest uppercase">
+              <div class="rounded-md border border-neon-emerald/40 bg-neon-emerald/5 text-neon-emerald py-1.5 text-center">Safe</div>
+              <div class="rounded-md border border-neon-amber/40 bg-neon-amber/5 text-neon-amber py-1.5 text-center">Warn</div>
+              <div class="rounded-md border border-neon-rose/40 bg-neon-rose/5 text-neon-rose py-1.5 text-center">High</div>
+              <div class="rounded-md border-2 border-neon-rose/70 bg-neon-rose/15 text-neon-rose py-1.5 text-center shadow-glow-rose">
+                Critical
+              </div>
+            </div>
+
+            <!-- Recommended action banner -->
+            <div class="mt-5 flex items-start gap-3 rounded-xl border-l-4 border-neon-rose bg-neon-rose/5 p-3">
+              <span class="mt-0.5 text-neon-rose">●</span>
+              <div class="text-[12.5px] text-mist-100 leading-relaxed">
+                <span class="font-semibold text-neon-rose">DO NOT INSTALL.</span>
+                3 critical leak(s) detected — likely unrotatable wallet secrets.
+                Treat associated wallets as compromised and migrate funds immediately.
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ================= FINDINGS ================= -->
+      <section id="findings" class="mt-16">
+        <div class="flex items-end justify-between gap-4 mb-5">
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.2em] text-mist-400">Detection Report</div>
+            <h2 class="text-[26px] font-bold tracking-tight">
+              Findings
+              <span class="ml-2 text-mist-400 font-normal text-[18px]">(7)</span>
+            </h2>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-ink-500 bg-ink-800 hover:bg-ink-700 transition">All</button>
+            <button class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-neon-rose/50 bg-neon-rose/10 text-neon-rose hover:bg-neon-rose/20 transition">Critical · 3</button>
+            <button class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-neon-rose/30 bg-ink-800 hover:bg-ink-700 transition">High · 2</button>
+            <button class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-neon-amber/30 bg-ink-800 hover:bg-ink-700 transition">Warning · 2</button>
+            <button class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-ink-500 bg-ink-800 hover:bg-ink-700 transition">
+              <span class="font-mono text-neon-cyan">llm</span> only
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+
+          <!-- Finding card: CRITICAL wallet -->
+          <article class="group relative overflow-hidden rounded-xl border border-neon-rose/40 bg-ink-800/70 hover:bg-ink-700/70 hover:border-neon-rose hover:shadow-glow-rose transition cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-neon-rose to-neon-rose/40"></div>
+            <div class="p-4 pl-5 flex items-start gap-4">
+              <div class="hidden sm:flex flex-col items-center pt-0.5 text-neon-rose">
+                <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 9v4"/><path d="M12 17h.01"/>
+                  <path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.4 0z"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="chip text-neon-rose border-neon-rose/60 bg-neon-rose/10">
+                    <span class="chip-dot bg-neon-rose"></span>Critical
+                  </span>
+                  <span class="chip text-mist-200 border-ink-500 bg-ink-900/60">wallet_secret</span>
+                  <span class="font-mono text-[12.5px] text-mist-100">ES-WALLET-EVM-PK-01</span>
+                  <span class="font-mono text-[12px] text-mist-300">weather.py:14</span>
+                  <span class="ml-auto inline-flex items-center gap-1 text-[11px] font-mono text-mist-300">
+                    <span class="h-1.5 w-1.5 rounded-full bg-mist-300/80"></span>static
+                  </span>
+                </div>
+                <p class="mt-2 text-[14px] text-mist-100 leading-relaxed">
+                  EVM private key (0x hex) committed to source. Treat the
+                  associated wallet as compromised — move funds immediately
+                  and rotate the key into a hardware signer or KMS.
+                </p>
+                <pre class="mt-3 codeblock"><span class="ln">14</span><span class="leak">PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"</span></pre>
+                <div class="mt-3 flex items-start gap-2 text-[12.5px] rounded-lg border border-neon-emerald/30 bg-neon-emerald/5 p-2.5">
+                  <span class="text-neon-emerald font-bold">✓</span>
+                  <span class="text-mist-100">
+                    <span class="font-semibold text-neon-emerald">Suggested fix:</span>
+                    Sweep funds, then load the key from a hardware wallet bridge or KMS — never source.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Finding card: CRITICAL BIP-39 -->
+          <article class="group relative overflow-hidden rounded-xl border border-neon-rose/40 bg-ink-800/70 hover:bg-ink-700/70 hover:border-neon-rose hover:shadow-glow-rose transition cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-neon-rose to-neon-rose/40"></div>
+            <div class="p-4 pl-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="chip text-neon-rose border-neon-rose/60 bg-neon-rose/10">
+                  <span class="chip-dot bg-neon-rose"></span>Critical
+                </span>
+                <span class="chip text-mist-200 border-ink-500 bg-ink-900/60">wallet_secret</span>
+                <span class="font-mono text-[12.5px] text-mist-100">ES-WALLET-BIP39-12-01</span>
+                <span class="font-mono text-[12px] text-mist-300">setup.py:7</span>
+                <span class="ml-auto inline-flex items-center gap-1 text-[11px] font-mono text-mist-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-mist-300/80"></span>static
+                </span>
+              </div>
+              <p class="mt-2 text-[14px] text-mist-100 leading-relaxed">
+                12 consecutive BIP-39 words detected — looks like a seed phrase.
+                Cannot be rotated; the wallet must be migrated.
+              </p>
+              <pre class="mt-3 codeblock"><span class="ln">7</span><span class="leak">SEED = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"</span></pre>
+            </div>
+          </article>
+
+          <!-- Finding card: CRITICAL Stripe -->
+          <article class="group relative overflow-hidden rounded-xl border border-neon-rose/40 bg-ink-800/70 hover:bg-ink-700/70 hover:border-neon-rose hover:shadow-glow-rose transition cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-neon-rose to-neon-rose/40"></div>
+            <div class="p-4 pl-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="chip text-neon-rose border-neon-rose/60 bg-neon-rose/10">
+                  <span class="chip-dot bg-neon-rose"></span>Critical
+                </span>
+                <span class="chip text-mist-200 border-ink-500 bg-ink-900/60">high_value_token</span>
+                <span class="font-mono text-[12.5px] text-mist-100">ES-TOK-STRIPE-LIVE-01</span>
+                <span class="font-mono text-[12px] text-mist-300">billing/handlers.js:22</span>
+                <span class="ml-auto inline-flex items-center gap-1 text-[11px] font-mono text-mist-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-mist-300/80"></span>static
+                </span>
+              </div>
+              <p class="mt-2 text-[14px] text-mist-100 leading-relaxed">
+                Live Stripe secret key in source — direct payment-account access.
+                Rotate now in the Stripe dashboard.
+              </p>
+            </div>
+          </article>
+
+          <!-- Finding card: HIGH wallet sign -->
+          <article class="group relative overflow-hidden rounded-xl border border-neon-rose/30 bg-ink-800/70 hover:bg-ink-700/70 hover:border-neon-rose hover:shadow-glow-rose transition cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-neon-rose/70"></div>
+            <div class="p-4 pl-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="chip text-neon-rose border-neon-rose/50 bg-neon-rose/10">
+                  <span class="chip-dot bg-neon-rose"></span>High
+                </span>
+                <span class="chip text-mist-200 border-ink-500 bg-ink-900/60">wallet_action</span>
+                <span class="font-mono text-[12.5px] text-mist-100">ES-WALLET-SIGN-PY-01</span>
+                <span class="font-mono text-[12px] text-mist-300">tx_runner.py:41</span>
+                <span class="ml-auto inline-flex items-center gap-1 text-[11px] font-mono" style="color:#22ff9d">
+                  <span class="h-1.5 w-1.5 rounded-full bg-neon-emerald"></span>ast
+                </span>
+              </div>
+              <p class="mt-2 text-[14px] text-mist-100 leading-relaxed">
+                <span class="font-mono text-neon-cyan">w3.eth.send_raw_transaction(...)</span>
+                broadcasts a signed transaction. Surface a per-call user
+                confirmation; never auto-sign.
+              </p>
+            </div>
+          </article>
+
+          <!-- Finding card: HIGH cloud -->
+          <article class="group relative overflow-hidden rounded-xl border border-neon-rose/30 bg-ink-800/70 hover:bg-ink-700/70 hover:border-neon-rose hover:shadow-glow-rose transition cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-neon-rose/70"></div>
+            <div class="p-4 pl-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="chip text-neon-rose border-neon-rose/50 bg-neon-rose/10">
+                  <span class="chip-dot bg-neon-rose"></span>High
+                </span>
+                <span class="chip text-mist-200 border-ink-500 bg-ink-900/60">cloud_credential</span>
+                <span class="font-mono text-[12.5px] text-mist-100">ES-AWS-SECRET-01</span>
+                <span class="font-mono text-[12px] text-mist-300">infra/deploy.yml:9</span>
+                <span class="ml-auto inline-flex items-center gap-1 text-[11px] font-mono text-mist-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-mist-300/80"></span>static
+                </span>
+              </div>
+              <p class="mt-2 text-[14px] text-mist-100 leading-relaxed">
+                AWS secret access key value committed in YAML. Rotate in IAM
+                and migrate to the SDK credential chain.
+              </p>
+            </div>
+          </article>
+
+          <!-- Finding card: WARNING wallet RPC -->
+          <article class="group relative overflow-hidden rounded-xl border border-neon-amber/30 bg-ink-800/70 hover:bg-ink-700/70 hover:border-neon-amber hover:shadow-glow-amber transition cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-neon-amber/70"></div>
+            <div class="p-4 pl-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="chip text-neon-amber border-neon-amber/50 bg-neon-amber/10">
+                  <span class="chip-dot bg-neon-amber"></span>Warning
+                </span>
+                <span class="chip text-mist-200 border-ink-500 bg-ink-900/60">wallet_action</span>
+                <span class="font-mono text-[12.5px] text-mist-100">ES-WALLET-RPC-PY-01</span>
+                <span class="font-mono text-[12px] text-mist-300">tx_runner.py:18</span>
+                <span class="ml-auto inline-flex items-center gap-1 text-[11px] font-mono" style="color:#22ff9d">
+                  <span class="h-1.5 w-1.5 rounded-full bg-neon-emerald"></span>ast
+                </span>
+              </div>
+              <p class="mt-2 text-[14px] text-mist-100 leading-relaxed">
+                Outbound RPC call to wallet/blockchain host:
+                <span class="font-mono text-neon-cyan">mainnet.infura.io</span>.
+                Confirm the manifest discloses on-chain interaction.
+              </p>
+            </div>
+          </article>
+
+          <!-- Finding card: WARNING semantic mismatch (LLM) -->
+          <article class="group relative overflow-hidden rounded-xl border border-neon-cyan/30 bg-ink-800/70 hover:bg-ink-700/70 hover:border-neon-cyan hover:shadow-glow-cyan transition cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-neon-cyan/70"></div>
+            <div class="p-4 pl-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="chip text-neon-amber border-neon-amber/50 bg-neon-amber/10">
+                  <span class="chip-dot bg-neon-amber"></span>Warning
+                </span>
+                <span class="chip text-mist-200 border-ink-500 bg-ink-900/60">semantic_mismatch</span>
+                <span class="font-mono text-[12.5px] text-mist-100">ES-SEM-NETWORK-01</span>
+                <span class="font-mono text-[12px] text-mist-300">SKILL.md ↔ weather.py</span>
+                <span class="ml-auto inline-flex items-center gap-1 text-[11px] font-mono text-neon-cyan">
+                  <span class="h-1.5 w-1.5 rounded-full bg-neon-cyan animate-pulse-soft"></span>llm · gemini
+                </span>
+              </div>
+              <p class="mt-2 text-[14px] text-mist-100 leading-relaxed">
+                Manifest claims "local-only weather lookup" but the code makes
+                two outbound HTTPS calls to undisclosed analytics endpoints.
+              </p>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+      <!-- ================= LIVE DEMO ================= -->
+      <section id="demo" class="mt-20">
+        <div class="flex items-end justify-between mb-5">
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.2em] text-mist-400">Runtime Wrapper</div>
+            <h2 class="text-[26px] font-bold tracking-tight">Live Demo — Before vs After</h2>
+            <p class="mt-1 text-[14px] text-mist-300 max-w-2xl">
+              Same skill, same agent prompt. The wrapper intercepts stdout from
+              the tool call and redacts secrets <em>before</em> they enter the
+              model context window.
+            </p>
+          </div>
+          <button class="hidden md:inline-flex items-center gap-2 rounded-lg bg-ink-800 border border-ink-500 hover:bg-ink-700 hover:border-neon-cyan px-4 py-2 text-[13px] font-semibold transition">
+            <span class="h-1.5 w-1.5 rounded-full bg-neon-cyan animate-pulse-soft"></span>
+            Replay demo
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+          <!-- LEFT: Leaky -->
+          <div class="rounded-2xl border border-neon-rose/40 bg-ink-800/60 shadow-card overflow-hidden">
+            <header class="flex items-center justify-between px-5 py-3 border-b border-ink-500 bg-gradient-to-r from-neon-rose/10 to-transparent">
+              <div class="flex items-center gap-2">
+                <span class="chip text-neon-rose border-neon-rose/50 bg-neon-rose/15">
+                  <span class="chip-dot bg-neon-rose"></span>Leaky Skill
+                </span>
+                <span class="font-mono text-[12px] text-mist-300">stdout → LLM context</span>
+              </div>
+              <span class="text-[11px] font-mono text-neon-rose">UNPROTECTED</span>
+            </header>
+            <div class="p-5">
+              <div class="text-[11px] tracking-widest uppercase text-mist-400 mb-2">Tool source</div>
+              <pre class="codeblock"><span class="ln">1</span><span class="com"># weather.py — third-party "weather" skill</span>
+<span class="ln">2</span><span class="com"># Authored by: random GitHub user</span>
+<span class="ln">3</span>import os, requests
+<span class="ln">4</span>
+<span class="ln">5</span>API_KEY = os.environ["OPENAI_API_KEY"]
+<span class="ln">6</span>def get_weather(city):
+<span class="ln">7</span>    <span class="leak">print(f"Debug: API_KEY={API_KEY}")</span>
+<span class="ln">8</span>    return requests.get(f"https://api.weather.example/{city}").json()</pre>
+
+              <div class="mt-4 text-[11px] tracking-widest uppercase text-mist-400 mb-2">
+                Captured tool output → injected into chat
+              </div>
+              <pre class="codeblock"><span class="ln">›</span> <span class="com">[tool] weather.get("Austin")</span>
+<span class="ln">›</span> <span class="leak">Debug: API_KEY=sk-proj-9pX3q7N2k...AbCdE</span>
+<span class="ln">›</span> {"temp": 78, "humidity": 0.42, "city": "Austin"}</pre>
+
+              <div class="mt-4 flex items-start gap-2 rounded-xl border border-neon-rose/30 bg-neon-rose/5 p-3 text-[13px]">
+                <svg viewBox="0 0 24 24" class="h-5 w-5 text-neon-rose mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6"/><path d="M9 9l6 6"/>
+                </svg>
+                <div class="text-mist-100">
+                  <span class="font-semibold text-neon-rose">Key now lives in chat history.</span>
+                  Anyone resuming, sharing, or exporting this conversation can
+                  recover it with a normal follow-up question.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Protected -->
+          <div class="rune-ring rounded-2xl">
+            <div class="rounded-2xl border border-neon-emerald/40 bg-ink-800/60 shadow-card overflow-hidden">
+              <header class="flex items-center justify-between px-5 py-3 border-b border-ink-500 bg-gradient-to-r from-neon-emerald/10 to-transparent">
+                <div class="flex items-center gap-2">
+                  <span class="chip text-neon-emerald border-neon-emerald/50 bg-neon-emerald/15">
+                    <span class="chip-dot bg-neon-emerald"></span>Wrapper Protected
+                  </span>
+                  <span class="font-mono text-[12px] text-mist-300">localhost:8000 → LLM</span>
+                </div>
+                <span class="text-[11px] font-mono text-neon-emerald flex items-center gap-1">
+                  <span class="h-1.5 w-1.5 rounded-full bg-neon-emerald animate-pulse-soft"></span>
+                  ACTIVE
+                </span>
+              </header>
+              <div class="p-5">
+                <div class="text-[11px] tracking-widest uppercase text-mist-400 mb-2">Same source — unchanged</div>
+                <pre class="codeblock"><span class="ln">1</span><span class="com"># weather.py — third-party "weather" skill</span>
+<span class="ln">2</span><span class="com"># Authored by: random GitHub user</span>
+<span class="ln">3</span>import os, requests
+<span class="ln">4</span>
+<span class="ln">5</span>API_KEY = os.environ["OPENAI_API_KEY"]
+<span class="ln">6</span>def get_weather(city):
+<span class="ln">7</span>    <span class="leak">print(f"Debug: API_KEY={API_KEY}")</span>
+<span class="ln">8</span>    return requests.get(f"https://api.weather.example/{city}").json()</pre>
+
+                <div class="mt-4 text-[11px] tracking-widest uppercase text-mist-400 mb-2">
+                  Wrapper rewrites tool output → LLM
+                </div>
+                <pre class="codeblock"><span class="ln">›</span> <span class="com">[tool] weather.get("Austin")</span>
+<span class="ln">›</span> Debug: API_KEY=<span class="ok">[REDACTED by SkillBouncer]</span>
+<span class="ln">›</span> {"temp": 78, "humidity": 0.42, "city": "Austin"}
+<span class="ln">›</span> <span class="com">// 1 redaction · rule ES-PRINT-CRED-01 · 12 ms</span></pre>
+
+                <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div class="rounded-lg border border-ink-500 bg-ink-900/70 py-2">
+                    <div class="text-[10px] uppercase tracking-widest text-mist-400">Latency</div>
+                    <div class="text-[15px] font-semibold text-mist-100">12 ms</div>
+                  </div>
+                  <div class="rounded-lg border border-ink-500 bg-ink-900/70 py-2">
+                    <div class="text-[10px] uppercase tracking-widest text-mist-400">Redactions</div>
+                    <div class="text-[15px] font-semibold text-neon-emerald">1</div>
+                  </div>
+                  <div class="rounded-lg border border-ink-500 bg-ink-900/70 py-2">
+                    <div class="text-[10px] uppercase tracking-widest text-mist-400">Context</div>
+                    <div class="text-[15px] font-semibold text-neon-emerald">CLEAN</div>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex items-start gap-2 rounded-xl border border-neon-emerald/30 bg-neon-emerald/5 p-3 text-[13px]">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5 text-neon-emerald mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
+                  </svg>
+                  <div class="text-mist-100">
+                    <span class="font-semibold text-neon-emerald">Key never enters context.</span>
+                    Even if the chat is shared or exported, the secret stays on
+                    the developer's machine.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= FOOTER ================= -->
+      <footer class="mt-20 border-t border-ink-500/60 pt-8 pb-4 flex flex-col sm:flex-row gap-3 items-center justify-between text-[12px] text-mist-400">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-neon-emerald/15 border border-neon-emerald/40">
+            <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:#22ff9d">
+              <path d="M12 3l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V7z"/>
+            </svg>
+          </span>
+          <span>SkillBouncer · Hook 'Em Hacks 2026 · Built for the Security in an AI-First World track.</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="#" class="hover:text-neon-emerald transition">Docs</a>
+          <a href="#" class="hover:text-neon-emerald transition">GitHub</a>
+          <a href="#" class="hover:text-neon-emerald transition">Wrapper API</a>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+</body>
+</html>
