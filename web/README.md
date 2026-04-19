@@ -1,46 +1,112 @@
-# SkillBouncer — Marketing / Dashboard Page
+# Estes — Web Frontend
 
-A premium, dark-themed cybersecurity landing page for **SkillBouncer** (the public face of the Estes auditor).
+A premium dark-themed dashboard / marketing page that wraps the real
+`auditor.scan_skill` engine.
 
-It is intentionally a **single self-contained HTML file** — no build step, no node_modules. Tailwind is loaded via CDN; particles, the constellation, and the animated risk gauge are vanilla JS / `<canvas>`.
+It's three files:
+
+| File              | Purpose                                                        |
+| ----------------- | -------------------------------------------------------------- |
+| `index.html`      | Single-file Tailwind page (no build step)                      |
+| `server.py`       | FastAPI bridge that serves `index.html` and exposes `/api/scan/*` |
+| `README.md`       | This document                                                  |
 
 ## Run it
 
-Just open the file in a browser:
-
 ```bash
-open web/index.html
+# 1. Install dependencies (adds python-multipart on top of the existing reqs)
+pip install -r requirements.txt
+
+# 2. Start the web server (serves the page AND the API)
+uvicorn web.server:app --port 5173
+
+# 3. Open the page
+open http://localhost:5173
 ```
 
-…or serve it locally if you prefer (so the CDN can warm cache):
+Drop a `.zip` into the upload zone, or paste a public GitHub URL. The page
+calls into `auditor.scan_skill(...)` and renders the real findings.
 
-```bash
-python3 -m http.server -d web 5173
-# then visit http://localhost:5173
+## Endpoints
+
+| Method | Path                       | Body                          | Returns                |
+| ------ | -------------------------- | ----------------------------- | ---------------------- |
+| GET    | `/`                        | —                             | `index.html`           |
+| GET    | `/api/health`              | —                             | `{ "status": "ok" }`   |
+| POST   | `/api/scan/file`           | `multipart/form-data` (`file`)| Scan payload (JSON)    |
+| POST   | `/api/scan/url`            | `{ "url": "https://..." }`    | Scan payload (JSON)    |
+| GET    | `/api/download/{scan_id}`  | —                             | `skill_fixed.zip`      |
+
+### Scan payload shape
+
+```jsonc
+{
+  "scan_id":      "b7708720…",
+  "label":        "weather_tool.zip",
+  "risk_score":   100,
+  "severity":     "Critical",      // "Safe" | "Warning" | "High Risk" | "Critical"
+  "files_scanned": 2,
+  "bytes_scanned": 1234,
+  "duration_ms":  4131,
+  "llm_used":     true,
+  "llm_provider": "gemini",        // or "" if unused
+  "warnings":     [],
+  "manifest":     { "name": "...", "description": "..." },
+  "counts":       { "critical": 0, "high": 8, "warning": 2, "info": 0 },
+  "suggested_fix": "Top-line remediation guidance.",
+  "can_download": true,            // false for URL scans (temp dir is gone)
+  "findings": [
+    {
+      "id":       "ES-PRINT-CRED-01",
+      "severity": "high",          // "critical" | "high" | "warning" | "info"
+      "source":   "static",        // "static" | "ast" | "llm"
+      "category": "credential",
+      "file":     "weather_tool/weather.py",
+      "line":     23,
+      "message":  "Debug print emits a credential to stdout.",
+      "snippet":  "print(f\"DEBUG key={api_key}\")",
+      "suggested_fix": "Replace with structured logging…",
+      "weight":   30                // _SEVERITY_WEIGHT × _CATEGORY_MULTIPLIER from auditor.py
+    }
+  ]
+}
 ```
 
-## Design notes
+## What the frontend does with each finding
 
-- **Palette** — deep ink (`#04080a`) with neon green (`#00ff9d`) and cyan accents.
-- **Typography** — Inter for UI, JetBrains Mono for code/eyebrows.
-- **Background** — fixed `<canvas>` with floating particles, CSS-driven sweeping light beams, a top-of-page volumetric green spotlight, and a faint masked grid.
-- **Hero** — gradient headline, animated constellation network under the copy, floating mono chips around it.
-- **Feature cards** — gradient hairline border (revealed on hover), glowing top accent line, lifts on hover.
-- **Live demo** — animated SVG risk gauge (gradient stroke green → amber → red) plus side-by-side Before / After code cards.
-- **Reveal-on-scroll** — `IntersectionObserver` toggles a `.in` class on `.reveal` elements; per-element `data-d="N"` adds staggered delays.
-- **Reduced motion** — all animations are disabled under `prefers-reduced-motion`.
+The Skill Checkup section reveals after a scan and renders one card per
+finding with three labelled blocks:
 
-## What lives where
+1. **Evidence** — the `snippet` from the auditor with the offending line
+   highlighted (red bar + tinted background).
+2. **Why this lowers your score** — the `message` plus a neon
+   `Severity weight: +N` callout, where `N = severity_weight × category_multiplier`
+   (mirrors `auditor._compute_score`).
+3. **Suggested fix** — `suggested_fix` from the auditor.
 
-| Concern              | Location in `index.html`                                |
-| -------------------- | ------------------------------------------------------- |
-| Color tokens         | `:root { --neon, --ink-… }` near the top of `<style>`   |
-| Background canvas    | `initBgCanvas` IIFE in `<script>`                       |
-| Hero constellation   | `initConstellation` IIFE                                |
-| Risk gauge animation | `animateGauge` + `gaugeIO` observer                     |
-| Card / button styles | `.card`, `.btn`, `.btn-primary`, `.btn-ghost`           |
-| Footer nav           | bottom `<footer>` block                                 |
+Plus the action bar at the top:
 
-## Notes on the existing Streamlit app
+- **Apply Wrapper** — toasts the install snippet for `wrapper.py`.
+- **Download Fixed** — calls `/api/download/{scan_id}`, which rebuilds a
+  patched `.zip` with `# estes: ignore` markers on every flagged line,
+  exactly mirroring `app._build_fixed_zip` from the Streamlit UI. Disabled
+  automatically for URL scans (the temp tree is gone after `scan_skill` returns).
 
-This page lives at `web/index.html` so it does **not** interfere with the Streamlit auditor (`app.py`). They can ship side-by-side: the Streamlit app remains the working scanner, this page is the public-facing dashboard / marketing surface.
+## State
+
+`server.py` keeps an in-memory `_STORE` keyed by `scan_id`:
+```python
+{ "report": ScanReport, "root": Path | None, "label": str, "created": float }
+```
+Entries TTL after **30 minutes** (`_TTL_S = 30 * 60`) and the materialized
+upload directory is `shutil.rmtree`-d on expiry.
+
+## Styling notes
+
+- Single neon-green accent (`#00ff9d`); risk colours (green/amber/red) only
+  appear in the gauge and severity pills.
+- All animations honour `prefers-reduced-motion`.
+- Background canvas + hero constellation throttle to ~30fps and pause when
+  off-screen / when the tab is hidden.
+- No `backdrop-filter`, no decorative gradients.
+- shadcn-style: hairline borders, glass-on-dark, mono eyebrows.
